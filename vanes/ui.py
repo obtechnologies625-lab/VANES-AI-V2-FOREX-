@@ -10,6 +10,7 @@ from .market import atr
 from .paper import PaperTrader
 from .platform import PlatformAdapter
 from .risk import build_risk_plan, position_size_from_tick, validate_trade_risk
+from .screen import ScreenObserver, next_step
 from .strategy import RuleBasedStrategy
 
 
@@ -36,6 +37,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.cloud_publisher = cloud_publisher
         self.last_signal = None
         self.alerts = AlertEngine()
+        self.screen_observer = ScreenObserver()
 
         self.root = tk.Tk()
         self.root.title("VANES-AI V2 • FOREX")
@@ -78,6 +80,16 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             wraplength=390, justify="center"
         )
         self.broker_status.pack(pady=2)
+        self.screen_status = tk.Label(
+            self.root, text="Screen: observing desktop context",
+            wraplength=390, justify="center"
+        )
+        self.screen_status.pack(pady=2)
+        self.next_step = tk.Label(
+            self.root, text="Next step: preparing visual guidance",
+            wraplength=390, justify="center"
+        )
+        self.next_step.pack(pady=2)
         tk.Label(
             self.root,
             text="OBSERVING • PAPER ONLY • NO BROKER ORDERS",
@@ -87,6 +99,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
 
     def refresh(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         """Refresh quotes, analysis, risk reference, and bridge state."""
+        screen = self.screen_observer.observe()
         snapshot = self.adapter.snapshot(self.config.symbol)
         candles = self.adapter.candles(
             self.config.symbol, self.config.timeframe, self.config.candle_count
@@ -218,6 +231,10 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.signal.config(text=guidance.direction.value)
         self.confidence.config(text=f"Confidence: {guidance.confidence:.0%}")
         self.reason.config(text=guidance.reason)
+        self.screen_status.config(text=f"Screen: {screen.summary}")
+        self.next_step.config(
+            text=f"Next step: {next_step(screen, guidance.direction.value)}"
+        )
 
         digits = spec.digits if spec else max(
             0, len(f"{point_size:.10f}".rstrip("0").split(".")[-1])
@@ -264,6 +281,9 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 risk_gate=risk_gate,
                 point_size=point_size,
                 analysis=diagnostics,
+                screen_context=screen.summary,
+                mt5_screen_active=screen.mt5_active,
+                suggested_next_step=next_step(screen, guidance.direction.value),
             )
             if self.cloud_publisher:
                 self.cloud_publisher.publish({

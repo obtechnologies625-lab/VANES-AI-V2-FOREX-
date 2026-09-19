@@ -2,8 +2,8 @@
 
 import unittest
 
-from vanes.backtest import BacktestConfig, run_backtest
-from vanes.market import Candle
+from vanes.backtest import BacktestConfig, run_backtest, run_tick_backtest
+from vanes.market import Candle, Tick
 from vanes.signals import Direction, Guidance
 
 
@@ -56,6 +56,30 @@ class BacktestTests(unittest.TestCase):
         self.assertEqual(report.trade_count, 1)
         self.assertEqual(report.wins, 1)
         self.assertGreater(report.net_pnl, 0)
+        self.assertEqual(report.trades[0].reason, "TARGET")
+
+    def test_tick_replay_uses_bid_ask_execution(self):
+        ticks = [
+            Tick(3_000_001, 1.0300, 1.0302),
+            Tick(3_000_500, 1.0702, 1.0704),
+        ]
+        report = run_tick_backtest(
+            self.candles(),
+            ticks,
+            strategy=FixedBuyStrategy(),
+            config=BacktestConfig(
+                starting_balance=1000,
+                risk_percent=1,
+                stop_atr=1,
+                reward_ratio=1,
+                value_per_price_unit=1,
+                point_size=0.0001,
+                max_trades=1,
+            ),
+        )
+        self.assertEqual(report.trade_count, 1)
+        self.assertEqual(report.trades[0].entry, 1.0302)
+        self.assertEqual(report.trades[0].exit_price, 1.0702)
         self.assertEqual(report.trades[0].reason, "TARGET")
 
     def test_empty_history_is_safe(self):

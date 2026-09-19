@@ -2,6 +2,5 @@ name = "vanes-ai-v2"
 main = "src/index.js"
 compatibility_date = "2026-09-19"
 
-# The first deployment runs in safe cloud mode with a WAIT state.
-# Live MT5/Python data is intentionally not exposed directly to the browser.
-# Add a real KV namespace later if you want persistent cloud state.
+[assets]
+directory = "./public"

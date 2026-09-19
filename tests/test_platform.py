@@ -1,0 +1,38 @@
+"""Tests for the read-only MetaTrader adapter behavior."""
+
+import unittest
+from unittest.mock import Mock
+
+from vanes.platform import MT5Adapter
+
+
+class PlatformTests(unittest.TestCase):
+    """Validate MT5 adapter behavior without requiring a live terminal."""
+
+    def test_invalid_timeframe_returns_no_candles(self):
+        adapter = MT5Adapter()
+        adapter._mt5 = Mock()
+        adapter._mt5.symbol_select.return_value = True
+        self.assertEqual(adapter.candles("EURUSD", "BAD", 10), [])
+
+    def test_point_size_comes_from_symbol_info(self):
+        adapter = MT5Adapter()
+        adapter._mt5 = Mock()
+        adapter._mt5.symbol_select.return_value = True
+        adapter._mt5.symbol_info.return_value = Mock(point=0.001)
+        self.assertEqual(adapter.point_size("USDJPY"), 0.001)
+
+    def test_snapshot_rejects_invalid_quote(self):
+        adapter = MT5Adapter()
+        adapter._mt5 = Mock()
+        adapter._mt5.symbol_select.return_value = True
+        adapter._mt5.symbol_info_tick.return_value = Mock(bid=0, ask=0)
+        self.assertIsNone(adapter.snapshot("EURUSD").bid)
+
+    def test_missing_mt5_uses_safe_point_fallback(self):
+        adapter = MT5Adapter()
+        self.assertEqual(adapter.point_size("EURUSD"), 0.00001)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -2,15 +2,17 @@
 
 import tkinter as tk
 
+from .audit import AuditLogger
 from .config import AppConfig
 from .market import atr
+from .paper import PaperTrader
 from .platform import PlatformAdapter
-from .risk import build_risk_plan
+from .risk import build_risk_plan, position_size
 from .strategy import RuleBasedStrategy
 
 
 class Overlay:  # pylint: disable=too-many-instance-attributes
-    """Display live VANES market analysis without executing orders."""
+    """Display live VANES analysis without executing broker orders."""
 
     def __init__(
         self,
@@ -18,12 +20,17 @@ class Overlay:  # pylint: disable=too-many-instance-attributes
         adapter: PlatformAdapter,
         strategy: RuleBasedStrategy,
         bridge=None,
+        audit: AuditLogger | None = None,
+        paper: PaperTrader | None = None,
     ):
         """Create the always-on-top observer window."""
         self.config = config
         self.adapter = adapter
         self.strategy = strategy
         self.bridge = bridge
+        self.audit = audit
+        self.paper = paper
+        self.last_signal = None
 
         self.root = tk.Tk()
         self.root.title("VANES-AI V2 • FOREX")
@@ -34,102 +41,117 @@ class Overlay:  # pylint: disable=too-many-instance-attributes
         self.root.attributes("-topmost", config.always_on_top)
 
         tk.Label(
-            self.root,
-            text="VANES-AI V2 • FOREX",
+            self.root, text="VANES-AI V2 • FOREX",
             font=("Segoe UI", 16, "bold"),
         ).pack(pady=(12, 2))
         self.status = tk.Label(self.root, text="Connecting…")
         self.status.pack()
         self.signal = tk.Label(
-            self.root,
-            text="WAIT",
-            font=("Segoe UI", 30, "bold"),
+            self.root, text="WAIT", font=("Segoe UI", 30, "bold")
         )
         self.signal.pack(pady=5)
         self.confidence = tk.Label(self.root, text="Confidence: —")
         self.confidence.pack()
         self.reason = tk.Label(
-            self.root,
-            text="Collecting market data",
-            wraplength=390,
-            justify="center",
+            self.root, text="Collecting market data",
+            wraplength=390, justify="center",
         )
         self.reason.pack(padx=15, pady=5)
         self.quote = tk.Label(
-            self.root,
-            text="Bid: —   Ask: —   Spread: —",
+            self.root, text="Bid: —   Ask: —   Spread: —"
         )
         self.quote.pack(pady=5)
         self.risk = tk.Label(
-            self.root,
-            text="Risk plan: —",
-            wraplength=390,
-            justify="center",
+            self.root, text="Risk plan: —",
+            wraplength=390, justify="center",
         )
         self.risk.pack(pady=4)
+        self.paper_status = tk.Label(
+            self.root, text="Paper: —", wraplength=390, justify="center"
+        )
+        self.paper_status.pack(pady=2)
         tk.Label(
             self.root,
-            text="OBSERVING • GUIDANCE ONLY • NO AUTO ORDERS",
+            text="OBSERVING • PAPER ONLY • NO BROKER ORDERS",
             font=("Segoe UI", 8),
         ).pack(side="bottom", pady=8)
         self.root.after(100, self.refresh)
 
     def refresh(self):
-        """Refresh quotes, strategy state, and the local MT5 bridge."""
+        """Refresh quotes, analysis, risk reference, and bridge state."""
         snapshot = self.adapter.snapshot(self.config.symbol)
         candles = self.adapter.candles(
-            self.config.symbol,
-            self.config.timeframe,
-            150,
+            self.config.symbol, self.config.timeframe, self.config.candle_count
         )
-        guidance = self.strategy.evaluate(candles)
+        confirmation = self.adapter.candles(
+            self.config.symbol,
+            self.config.confirmation_timeframe,
+            self.config.candle_count,
+        )
+        spread_points = None
+        if snapshot.spread is not None and snapshot.bid:
+            spread_points = snapshot.spread / 0.00001
+        guidance = self.strategy.evaluate(
+            candles, spread_points=spread_points, confirmation=confirmation
+        )
 
-        stop_loss = take_profit = 0.0
-        atr_value = atr(candles, 14) if len(candles) >= 15 else None
+        stop_loss = take_profit = size = 0.0
+        atr_value = atr(candles, self.strategy.config.atr_period)
         if (
             atr_value
             and guidance.direction.value in ("BUY", "SELL")
             and snapshot.bid
         ):
             entry = (
-                snapshot.ask
-                if guidance.direction.value == "BUY"
+                snapshot.ask if guidance.direction.value == "BUY"
                 else snapshot.bid
             )
-            plan = build_risk_plan(
-                entry,
-                guidance.direction.value,
-                atr_value,
-            )
+            plan = build_risk_plan(entry, guidance.direction.value, atr_value)
             if plan:
                 stop_loss, take_profit = plan.stop_loss, plan.take_profit
+                size = position_size(
+                    self.config.account_balance,
+                    self.config.risk_percent,
+                    plan.risk_distance,
+                )
                 self.risk.config(
                     text=(
-                        f"Reference SL: {stop_loss:.5f}  "
-                        f"TP: {take_profit:.5f}  "
+                        f"Reference SL: {stop_loss:.5f}  TP: {take_profit:.5f}\n"
+                        f"Risk size reference: {size:.4f}  "
                         f"R:R {plan.risk_reward:.1f}:1"
                     )
                 )
         else:
             self.risk.config(text="Risk plan: no active setup")
 
+        if guidance.direction.value != self.last_signal:
+            self.last_signal = guidance.direction.value
+            if self.audit:
+                self.audit.write(
+                    "guidance",
+                    symbol=self.config.symbol,
+                    direction=guidance.direction.value,
+                    confidence=guidance.confidence,
+                    reason=guidance.reason,
+                )
+
+        if self.paper:
+            self.paper_status.config(
+                text=(
+                    f"Paper balance: {self.paper.balance:.2f}  "
+                    f"Daily P/L: {self.paper.daily_pnl:.2f}"
+                )
+            )
+
         self.signal.config(text=guidance.direction.value)
-        self.confidence.config(
-            text=f"Confidence: {guidance.confidence:.0%}"
-        )
+        self.confidence.config(text=f"Confidence: {guidance.confidence:.0%}")
         self.reason.config(text=guidance.reason)
 
         if snapshot.bid is None:
-            self.status.config(
-                text=f"{self.config.platform}: waiting"
-            )
-            self.quote.config(
-                text="Bid: —   Ask: —   Spread: —"
-            )
+            self.status.config(text=f"{self.config.platform}: waiting")
+            self.quote.config(text="Bid: —   Ask: —   Spread: —")
         else:
-            self.status.config(
-                text=f"{self.config.platform}: connected"
-            )
+            self.status.config(text=f"{self.config.platform}: connected")
             self.quote.config(
                 text=(
                     f"Bid: {snapshot.bid:.5f}   "
@@ -149,6 +171,9 @@ class Overlay:  # pylint: disable=too-many-instance-attributes
                 reason=guidance.reason,
                 stop_loss=stop_loss,
                 take_profit=take_profit,
+                paper_balance=self.paper.balance if self.paper else 0.0,
+                paper_daily_pnl=self.paper.daily_pnl if self.paper else 0.0,
+                paper_open_trades=len(self.paper.trades) if self.paper else 0,
             )
 
         self.root.after(self.config.refresh_ms, self.refresh)

@@ -5,6 +5,17 @@ from typing import Sequence
 
 
 @dataclass(frozen=True)
+class Tick:
+    """Represent one historical bid/ask market tick."""
+
+    time_msc: int
+    bid: float
+    ask: float
+    last: float = 0.0
+    volume: float = 0.0
+
+
+@dataclass(frozen=True)
 class Candle:
     """Represent one OHLCV market candle."""
 

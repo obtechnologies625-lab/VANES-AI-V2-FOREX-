@@ -138,6 +138,18 @@ Example:
 The current engine is a single-symbol/single-timeframe replay. Multi-timeframe historical alignment and broker-accurate tick economics are separate hardening steps.
 
 
+### Tick-accurate execution replay
+
+`run_tick_backtest()` replays strategy execution against historical MT5 bid/ask ticks.
+
+- Indicators use only candles strictly before each decision candle.
+- BUY entries use ask and BUY exits use bid.
+- SELL entries use bid and SELL exits use ask.
+- Stops and targets are checked tick-by-tick, removing OHLC ordering ambiguity.
+- `MT5Adapter.ticks()` loads historical bid/ask ticks with MT5 `copy_ticks_range()`.
+- Broker tick size/value and volume constraints can be supplied through `BacktestConfig`.
+- Commission is applied only when explicitly supplied.
+- Swaps, historical slippage and changing broker contract settings are not invented.
 ### Forex accuracy boundary
 
 For broker-accurate backtests, populate `BacktestConfig` with the MT5 symbol's `trade_tick_size`, `trade_tick_value`, `volume_min`, `volume_max`, and `volume_step` from `MT5Adapter.symbol_spec()`. The engine then sizes volume from actual cash risk instead of assuming one generic price-unit value.

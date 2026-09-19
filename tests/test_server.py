@@ -18,13 +18,45 @@ class ServerTests(unittest.TestCase):
         thread = threading.Thread(target=bridge.start)
         thread.start()
         try:
-            with urlopen(f"http://127.0.0.1:{port}/health", timeout=2) as response:
-                self.assertEqual(json.loads(response.read())["status"], "ok")
-            with urlopen(f"http://127.0.0.1:{port}/state", timeout=2) as response:
-                self.assertEqual(json.loads(response.read())["symbol"], "EURUSD")
+            with urlopen(
+                f"http://127.0.0.1:{port}/health", timeout=2
+            ) as response:
+                health = json.loads(response.read())
+                self.assertEqual(health["status"], "ok")
+                self.assertFalse(health["market_ready"])
+                self.assertTrue(health["updated_at"])
+            bridge.update(bid=1.1, ask=1.1002, point_size=0.00001)
+            with urlopen(
+                f"http://127.0.0.1:{port}/state", timeout=2
+            ) as response:
+                state = json.loads(response.read())
+                self.assertEqual(state["symbol"], "EURUSD")
+                self.assertEqual(state["point_size"], 0.00001)
+                self.assertTrue(state["updated_at"])
         finally:
             bridge.stop()
             thread.join(timeout=2)
+
+    def test_state_updates_are_serialized(self):
+        bridge = LocalBridge(port=0)
+        bridge.update(symbol="EURUSD")
+        errors = []
+
+        def writer(index):
+            try:
+                bridge.update(direction=f"WAIT-{index}")
+            except Exception as exc:  # pylint: disable=broad-exception-caught
+                errors.append(exc)
+
+        threads = [
+            threading.Thread(target=writer, args=(i,)) for i in range(20)
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        self.assertFalse(errors)
+        self.assertTrue(bridge._get_state()["state"]["updated_at"])
 
 
 if __name__ == "__main__":

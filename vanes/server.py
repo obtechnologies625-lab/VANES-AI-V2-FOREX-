@@ -1,16 +1,24 @@
+"""Localhost HTTP bridge used by the MT5 chart panel."""
+
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+
 class _Handler(BaseHTTPRequestHandler):
+    """Serve the latest VANES state to MetaTrader 5."""
+
     server_version = "VANES/0.1"
 
     def do_GET(self):
+        """Return the current VANES state for /state requests."""
         if self.path != "/state":
             self.send_response(404)
             self.end_headers()
             return
-        payload = json.dumps(self.server.state, separators=(",", ":")).encode()
+        payload = json.dumps(
+            self.server.state, separators=(",", ":")
+        ).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(payload)))
@@ -18,12 +26,14 @@ class _Handler(BaseHTTPRequestHandler):
         self.wfile.write(payload)
 
     def log_message(self, *_):
-        return
+        """Suppress HTTP request logging in the desktop console."""
+
 
 class LocalBridge:
-    """Localhost-only HTTP bridge for the MT5 chart panel."""
+    """Expose VANES state on localhost only."""
 
     def __init__(self, host="127.0.0.1", port=8765):
+        """Create the local bridge server."""
         self.server = ThreadingHTTPServer((host, port), _Handler)
         self.server.state = {
             "symbol": "",
@@ -41,11 +51,14 @@ class LocalBridge:
         )
 
     def start(self):
+        """Start serving bridge requests in a background thread."""
         self.thread.start()
 
     def update(self, **values):
+        """Update the state exposed to MetaTrader 5."""
         self.server.state.update(values)
 
     def stop(self):
+        """Stop and close the local bridge server."""
         self.server.shutdown()
         self.server.server_close()

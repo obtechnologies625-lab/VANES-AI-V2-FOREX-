@@ -19,7 +19,7 @@ class StrategyConfig:  # pylint: disable=too-few-public-methods
     max_spread_points: float = 25.0
 
 
-class RuleBasedStrategy:  # pylint: disable=too-few-public-methods
+class RuleBasedStrategy:  # pylint: disable=too-few-public-methods,too-many-return-statements
     """Generate transparent, non-executing market guidance."""
 
     def __init__(self, config: StrategyConfig | None = None):

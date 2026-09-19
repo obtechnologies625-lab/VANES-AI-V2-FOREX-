@@ -7,7 +7,7 @@ from .signals import Direction, Guidance
 
 
 @dataclass(frozen=True)
-class StrategyConfig:
+class StrategyConfig:  # pylint: disable=too-few-public-methods
     """Configure the indicator periods and confidence threshold."""
 
     fast_ema: int = 9

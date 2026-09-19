@@ -7,6 +7,7 @@ It does not capture credentials, transmit screenshots, or execute clicks/orders.
 
 from dataclasses import dataclass
 import ctypes
+from ctypes import wintypes
 import os
 from pathlib import Path
 
@@ -70,7 +71,7 @@ class ScreenObserver:
         if self._user32 is None:
             return False
         try:
-            from PIL import ImageGrab
+            from PIL import ImageGrab  # pylint: disable=import-outside-toplevel
         except ImportError:
             return False
 
@@ -102,7 +103,7 @@ class ScreenObserver:
             self._user32.GetWindowTextW(hwnd, buffer, length + 1)
             title = buffer.value.strip()
 
-        point = ctypes.wintypes.POINT()
+        point = wintypes.POINT()
         self._user32.GetCursorPos(ctypes.byref(point))
         mouse_active = self._key_active(self.VK_LBUTTON) or self._key_active(
             self.VK_RBUTTON
@@ -143,9 +144,15 @@ def next_step(context, direction):
             "VANES will observe the chart context."
         )
     if direction == "BUY":
-        return "Review the MT5 BUY setup, then verify entry, reference SL/TP, and risk before any manual action."
+        return (
+            "Review the MT5 BUY setup, then verify entry, reference "
+            "SL/TP, and risk before any manual action."
+        )
     if direction == "SELL":
-        return "Review the MT5 SELL setup, then verify entry, reference SL/TP, and risk before any manual action."
+        return (
+            "Review the MT5 SELL setup, then verify entry, reference "
+            "SL/TP, and risk before any manual action."
+        )
     return "Keep the MT5 chart visible; VANES is waiting for a clearer setup."
 
 

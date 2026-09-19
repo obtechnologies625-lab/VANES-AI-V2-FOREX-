@@ -1,7 +1,12 @@
+"""Runtime configuration for the VANES desktop application."""
+
 from dataclasses import dataclass
+
 
 @dataclass
 class AppConfig:
+    """Configure the desktop observer and market-data source."""
+
     refresh_ms: int = 1500
     overlay_width: int = 430
     overlay_height: int = 380

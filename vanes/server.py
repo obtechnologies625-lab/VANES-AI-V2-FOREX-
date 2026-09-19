@@ -82,7 +82,7 @@ class _Handler(BaseHTTPRequestHandler):
 class LocalBridge:
     """Expose VANES state on localhost only."""
 
-    def __init__(self, host="127.0.0.1", port=8765):
+    def __init__(self, host="127.0.0.1", port=8765, chatbot=None):
         """Create the local bridge server."""
         self._lock = threading.RLock()
         initial = {
@@ -112,7 +112,7 @@ class LocalBridge:
         }
         self.server = ThreadingHTTPServer((host, port), _Handler)
         self.server.get_state = self._get_state
-        self.server.chatbot = MarketChatbot(
+        self.server.chatbot = chatbot or MarketChatbot(
             lambda: self._get_state()["state"]
         )
         self.thread = threading.Thread(

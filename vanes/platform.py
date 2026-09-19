@@ -57,7 +57,6 @@ class PlatformAdapter:
 
     def close(self) -> None:
         """Close the platform connection."""
-        pass
 
 
 class MT5Adapter(PlatformAdapter):
@@ -114,7 +113,7 @@ class MT5Adapter(PlatformAdapter):
             return 0.00001
         return float(info.point)
 
-    def symbol_spec(self, symbol: str) -> SymbolSpec | None:
+    def symbol_spec(self, symbol: str) -> SymbolSpec | None:  # pylint: disable=too-many-return-statements
         """Read tick economics and volume limits from MT5."""
         if not self._select(symbol):
             return None

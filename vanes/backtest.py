@@ -10,7 +10,7 @@ from .strategy import RuleBasedStrategy
 
 
 @dataclass(frozen=True)
-class BacktestConfig:
+class BacktestConfig:  # pylint: disable=too-many-instance-attributes
     """Configure deterministic, single-symbol historical replay."""
 
     starting_balance: float = 10_000.0
@@ -39,7 +39,7 @@ class BacktestTrade:
 
 
 @dataclass(frozen=True)
-class BacktestReport:
+class BacktestReport:  # pylint: disable=too-many-instance-attributes
     """Summarize deterministic historical strategy performance."""
 
     starting_balance: float
@@ -68,7 +68,7 @@ def run_backtest(
     candles: list[Candle],
     strategy: RuleBasedStrategy | None = None,
     config: BacktestConfig | None = None,
-) -> BacktestReport:
+) -> BacktestReport:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
     """Replay candles without look-ahead and without broker order submission."""
     cfg = config or BacktestConfig()
     engine = strategy or RuleBasedStrategy()

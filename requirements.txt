@@ -1,2 +1,1 @@
 psutil>=5.9
-MetaTrader5>=5.0.45

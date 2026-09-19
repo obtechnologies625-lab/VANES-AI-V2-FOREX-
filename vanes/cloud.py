@@ -30,6 +30,7 @@ class CloudStatePublisher:
         "paper_balance",
         "paper_daily_pnl",
         "paper_open_trades",
+        "paper_trades",
         "point_size",
     )
 
@@ -67,7 +68,6 @@ class CloudStatePublisher:
             for key in self.FIELDS
             if key in state
         }
-        payload["updated_at"] = None
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         request = Request(
             self.url,

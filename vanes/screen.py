@@ -11,6 +11,9 @@ import os
 
 
 @dataclass(frozen=True)
+# pylint: disable=too-few-public-methods
+
+
 class ScreenContext:
     """Describe the visible desktop context available to VANES."""
 
@@ -28,9 +31,13 @@ class ScreenContext:
         if not self.supported:
             return "Visual observer unavailable on this platform."
         if not self.window_title:
-            return "Desktop visible; active window title unavailable."
+            return (
+                "Desktop visible; active window title unavailable."
+            )
         activity = "activity detected" if self.mouse_active or self.keyboard_active else "no recent input"
-        return f"{self.window_title} • {activity}"
+        return (
+            f"{self.window_title} • {activity}"
+        )
 
 
 class ScreenObserver:
@@ -104,9 +111,14 @@ class ScreenObserver:
 def next_step(context, direction):
     """Suggest the next visible action without performing it."""
     if not context.supported:
-        return "Open MetaTrader 5 to enable visual guidance."
+        return (
+            "Open MetaTrader 5 to enable visual guidance."
+        )
     if not context.mt5_active:
-        return "Bring MetaTrader 5 to the foreground; VANES will observe the chart context."
+        return (
+            "Bring MetaTrader 5 to the foreground; "
+            "VANES will observe the chart context."
+        )
     if direction == "BUY":
         return "Review the MT5 BUY setup, then verify entry, reference SL/TP, and risk before any manual action."
     if direction == "SELL":

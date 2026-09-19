@@ -1,6 +1,23 @@
 # VANES-AI V2 FOREX
 
+> **Realtime Forex Intelligence Command Center** — market data, transparent signals, broker-aware risk references, paper trading, historical replay, MT5 bridge, and a local chatbot in one project.
+
 VANES-AI V2 is a read-only market-analysis and paper-trading observer for MetaTrader 5. It displays transparent technical guidance and never submits broker orders.
+
+## Realtime command center
+
+Start VANES with `python -m vanes.app`, then open **http://127.0.0.1:8765/chat**. The browser command center refreshes live market state every second and lets you ask VANES about the quote, signal, indicators, structure, risk, paper account, and reasons for WAIT.
+
+Example questions:
+
+- `What is EURUSD doing?`
+- `What is the signal?`
+- `Show indicators`
+- `Why wait?`
+- `Show risk`
+- `Paper P/L`
+
+The chatbot is deliberately read-only and cannot place broker orders.
 
 ## V0.2 capabilities
 
@@ -68,6 +85,25 @@ The panel reads the local Python state endpoint. It does not place, modify, or c
 Paper trading is an internal simulation only. It never calls an MT5 trade API. The simulator tracks balance, realized P/L, open/closed simulated trades and a daily loss limit.
 
 The desktop observer does not automatically enter paper positions. This is intentional: the first paper release is non-invasive. The PaperTrader class can be driven by a future backtest/replay workflow.
+
+## Quick start
+
+### Windows / MetaTrader 5
+
+1. Install Python 3.10+ and MetaTrader 5.
+2. Install dependencies: `python -m pip install -r requirements.txt`.
+3. Install MT5 support: `python -m pip install -r requirements-mt5.txt`.
+4. Start: `python -m vanes.app`.
+5. Open `http://127.0.0.1:8765/chat`.
+6. For the MT5 chart panel, allow `http://127.0.0.1:8765` under WebRequest settings.
+
+### Safety defaults
+
+- `VANES_DRY_RUN=1` by default.
+- No broker trade API is called by the current application.
+- The HTTP bridge binds to localhost.
+- Chat commands are informational only.
+- Risk calculations are references, not an authorization to trade.
 
 ## Testing
 

@@ -65,7 +65,12 @@ class PaperTrader:  # pylint: disable=too-many-arguments,too-many-positional-arg
         self, trade: PaperTrade, exit_price: float, closed_at: int
     ) -> float:
         """Close a simulated trade and update balance."""
-        if (\n            exit_price <= 0\n            or trade not in self.trades\n            or trade.closed_at is not None\n        ):\n            return 0.0
+        if (
+            exit_price <= 0
+            or trade not in self.trades
+            or trade.closed_at is not None
+        ):
+            return 0.0
         multiplier = 1.0 if trade.direction == "BUY" else -1.0
         pnl = (exit_price - trade.entry) * trade.size * multiplier
         self.balance += pnl

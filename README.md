@@ -102,3 +102,37 @@ GitHub Actions runs syntax checks, unit tests and Pylint on Python 3.10, 3.11 an
 ## Safety boundary
 
 VANES-AI V2 currently has no automatic broker order execution. It is designed to inform the user and record paper-analysis results. Any future live-order module should be separately designed, tested, permissioned and disabled by default.
+
+## Historical backtesting
+
+VANES includes a deterministic candle-replay engine in `vanes/backtest.py`.
+
+The replay engine:
+
+- Uses only candles available before each signal (no look-ahead).
+- Evaluates the existing `RuleBasedStrategy`.
+- Enters at the next candle open after a signal.
+- Builds SL/TP from ATR using the same risk-plan logic as the observer.
+- Exits at stop or target; if both are touched in one candle, stop is treated as first for a conservative result.
+- Closes any remaining position at the final candle close.
+- Reports net P/L, return, trade count, wins/losses, win rate, gross profit/loss, profit factor and maximum drawdown.
+- Never submits broker orders.
+
+Example:
+
+    from vanes.backtest import BacktestConfig, run_backtest
+
+    report = run_backtest(
+        candles,
+        config=BacktestConfig(
+            starting_balance=10000,
+            risk_percent=1,
+            value_per_price_unit=1,
+        ),
+    )
+
+    print(report.net_pnl, report.max_drawdown, report.win_rate_percent)
+
+`value_per_price_unit` is deliberately explicit because real FX cash-per-price-unit varies by broker, symbol and account currency. It must be calibrated from MT5 symbol metadata before treating a backtest as a broker-accurate P/L estimate.
+
+The current engine is a single-symbol/single-timeframe replay. Multi-timeframe historical alignment and broker-accurate tick economics are separate hardening steps.

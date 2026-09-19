@@ -1,8 +1,13 @@
+"""Market data structures and technical indicators."""
+
 from dataclasses import dataclass
 from typing import Sequence
 
+
 @dataclass(frozen=True)
 class Candle:
+    """Represent one OHLCV market candle."""
+
     time: int
     open: float
     high: float
@@ -10,7 +15,9 @@ class Candle:
     close: float
     volume: float
 
+
 def ema(values: Sequence[float], period: int) -> list[float]:
+    """Calculate an exponential moving average."""
     if period <= 0 or not values:
         return []
     alpha = 2.0 / (period + 1.0)
@@ -19,11 +26,13 @@ def ema(values: Sequence[float], period: int) -> list[float]:
         result.append(alpha * float(value) + (1.0 - alpha) * result[-1])
     return result
 
+
 def rsi(values: Sequence[float], period: int = 14) -> float | None:
+    """Calculate the latest relative strength index."""
     if len(values) < period + 1:
         return None
     gains, losses = [], []
-    for a, b in zip(values[-period-1:-1], values[-period:]):
+    for a, b in zip(values[-period - 1:-1], values[-period:]):
         change = float(b) - float(a)
         gains.append(max(change, 0.0))
         losses.append(max(-change, 0.0))
@@ -34,11 +43,15 @@ def rsi(values: Sequence[float], period: int = 14) -> float | None:
     rs = avg_gain / avg_loss
     return 100.0 - (100.0 / (1.0 + rs))
 
+
 def atr(candles: Sequence[Candle], period: int = 14) -> float | None:
+    """Calculate the latest average true range."""
     if len(candles) < period + 1:
         return None
     trs = []
-    for previous, current in zip(candles[-period-1:-1], candles[-period:]):
+    for previous, current in zip(
+        candles[-period - 1:-1], candles[-period:]
+    ):
         trs.append(max(
             current.high - current.low,
             abs(current.high - previous.close),

@@ -56,7 +56,7 @@ def position_size(
     return risk_cash / (risk_distance * value_per_price_unit)
 
 
-def position_size_from_tick(
+def position_size_from_tick(  # pylint: disable=too-many-arguments,too-many-positional-arguments
     balance: float,
     risk_percent: float,
     risk_distance: float,

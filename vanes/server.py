@@ -10,7 +10,7 @@ class _Handler(BaseHTTPRequestHandler):
 
     server_version = "VANES/0.1"
 
-    def do_GET(self):
+    def do_GET(self):  # pylint: disable=invalid-name
         """Return the current VANES state for /state requests."""
         if self.path != "/state":
             self.send_response(404)

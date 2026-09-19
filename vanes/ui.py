@@ -263,7 +263,24 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                     "take_profit": take_profit,
                     "paper_balance": self.paper.balance if self.paper else 0.0,
                     "paper_daily_pnl": self.paper.daily_pnl if self.paper else 0.0,
-                    "paper_open_trades": len(self.paper.trades) if self.paper else 0,
+                    "paper_open_trades": (
+                        sum(1 for trade in self.paper.trades
+                            if trade.closed_at is None)
+                        if self.paper else 0
+                    ),
+                    "paper_trades": [
+                        {
+                            "direction": trade.direction,
+                            "entry": trade.entry,
+                            "stop_loss": trade.stop_loss,
+                            "take_profit": trade.take_profit,
+                            "size": trade.size,
+                            "opened_at": trade.opened_at,
+                            "closed_at": trade.closed_at,
+                            "exit_price": trade.exit_price,
+                        }
+                        for trade in (self.paper.trades[-20:] if self.paper else [])
+                    ],
                     "broker_ready": spec is not None,
                     "risk_gate": risk_gate,
                     "point_size": point_size,

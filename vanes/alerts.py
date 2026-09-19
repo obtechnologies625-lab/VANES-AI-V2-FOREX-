@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class Alert:
+class Alert:  # pylint: disable=too-few-public-methods
     """Represent a user-facing market alert."""
 
     kind: str

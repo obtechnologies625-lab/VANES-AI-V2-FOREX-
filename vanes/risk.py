@@ -1,6 +1,7 @@
 """Risk-reference calculations for VANES guidance."""
 
 from dataclasses import dataclass
+from math import floor
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,34 @@ def position_size(
         return 0.0
     risk_cash = balance * risk_percent / 100.0
     return risk_cash / (risk_distance * value_per_price_unit)
+
+
+def position_size_from_tick(
+    balance: float,
+    risk_percent: float,
+    risk_distance: float,
+    tick_size: float,
+    tick_value: float,
+    volume_min: float,
+    volume_max: float,
+    volume_step: float,
+) -> float:
+    """Calculate broker-aware volume from MT5 tick economics."""
+    values = (
+        balance, risk_percent, risk_distance, tick_size, tick_value,
+        volume_min, volume_max, volume_step,
+    )
+    if any(value <= 0 for value in values) or volume_max < volume_min:
+        return 0.0
+    risk_cash = balance * risk_percent / 100.0
+    loss_per_lot = risk_distance / tick_size * tick_value
+    if loss_per_lot <= 0:
+        return 0.0
+    raw = risk_cash / loss_per_lot
+    stepped = floor(raw / volume_step + 1e-12) * volume_step
+    if stepped < volume_min:
+        return 0.0
+    return min(stepped, volume_max)
 
 
 def daily_loss_limit(balance: float, percent: float) -> float:

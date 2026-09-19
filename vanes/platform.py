@@ -138,13 +138,6 @@ class MT5Adapter(PlatformAdapter):
             float(info.volume_max), float(info.volume_step),
         )
 
-    def ticks(
-        self, symbol: str, start_time: int, end_time: int
-    ) -> list[Tick]:
-        """Return historical bid/ask ticks between Unix-second timestamps."""
-        del symbol, start_time, end_time
-        return []
-
     def candles(
         self, symbol: str, timeframe: str = "M15", count: int = 150
     ) -> list[Candle]:

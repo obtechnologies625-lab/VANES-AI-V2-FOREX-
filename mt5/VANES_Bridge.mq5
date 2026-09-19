@@ -74,18 +74,18 @@ void OnTimer()
 
 string JsonString(string json, string key, string fallback)
 {
-   string token = """ + key + "":"";
+   string token = "\"" + key + "\":\"";
    int start = StringFind(json, token);
    if(start < 0) return fallback;
    start += StringLen(token);
-   int end = StringFind(json, """, start);
+   int end = StringFind(json, "\"", start);
    if(end < 0) return fallback;
    return StringSubstr(json, start, end-start);
 }
 
 double JsonNumber(string json, string key, double fallback)
 {
-   string token = """ + key + "":";
+   string token = "\"" + key + "\":";
    int start = StringFind(json, token);
    if(start < 0) return fallback;
    start += StringLen(token);

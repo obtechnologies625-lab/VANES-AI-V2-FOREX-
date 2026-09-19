@@ -15,6 +15,14 @@ class PaperTests(unittest.TestCase):
         self.assertAlmostEqual(trader.close_trade(trade, 1.01, 2), 1.0)
         self.assertEqual(trader.balance, 10001.0)
 
+    def test_closed_trade_cannot_be_closed_twice(self):
+        trader = PaperTrader(10000, 300)
+        trade = trader.open_trade("BUY", 1.0, 0.9, 1.1, 100, 1)
+        self.assertIsNotNone(trade)
+        self.assertAlmostEqual(trader.close_trade(trade, 1.01, 2), 1.0)
+        self.assertEqual(trader.close_trade(trade, 1.02, 3), 0.0)
+        self.assertEqual(trader.balance, 10001.0)
+
     def test_loss_limit_blocks_new_trade(self):
         trader = PaperTrader(10000, 100)
         first = trader.open_trade("BUY", 1.0, 0.9, 1.1, 1000, 1)

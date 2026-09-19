@@ -169,11 +169,9 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 self.risk.config(
                     text=(
                         f"Reference SL: {stop_loss:.{digits}f}  "
-                        f"TP: {take_profit:.{digits}f}
-"
+                        f"TP: {take_profit:.{digits}f}\n"
                         f"Risk size reference: {size:.4f}  "
-                        f"R:R {plan.risk_reward:.1f}:1
-"
+                        f"R:R {plan.risk_reward:.1f}:1\n"
                         f"Risk gate: {risk_check.reason}"
                     )
                 )

@@ -36,6 +36,7 @@ def main():
     )
     bridge.start()
     print("VANES bridge: http://127.0.0.1:8765/state")
+    print("VANES realtime chat: http://127.0.0.1:8765/chat")
 
     try:
         Overlay(

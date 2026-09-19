@@ -8,6 +8,7 @@ It does not capture credentials, transmit screenshots, or execute clicks/orders.
 from dataclasses import dataclass
 import ctypes
 import os
+from pathlib import Path
 
 
 # pylint: disable=too-few-public-methods
@@ -63,6 +64,24 @@ class ScreenObserver:
                 self._user32 = ctypes.windll.user32
             except (AttributeError, OSError):
                 self._user32 = None
+
+    def capture_mt5(self, path, region=None):
+        """Capture the desktop locally for an explicit visual inspection."""
+        if self._user32 is None:
+            return False
+        try:
+            from PIL import ImageGrab
+        except ImportError:
+            return False
+
+        if region is None:
+            image = ImageGrab.grab()
+        else:
+            image = ImageGrab.grab(bbox=region)
+        target = Path(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        image.save(target)
+        return True
 
     def _key_active(self, key):
         """Return whether a virtual key is currently pressed."""

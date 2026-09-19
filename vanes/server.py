@@ -25,7 +25,12 @@ class _Handler(BaseHTTPRequestHandler):
             self.end_headers()
             self.wfile.write(payload)
             return
-        if self.path == "/health":
+        if self.path in {"/api/mt5", "/mt5"}:
+            payload = json.dumps(
+                self.server.get_state()["state"],
+                separators=(",", ":"),
+            ).encode()
+        elif self.path == "/health":
             payload = json.dumps(
                 self.server.get_state()["health"],
                 separators=(",", ":"),
@@ -102,6 +107,9 @@ class LocalBridge:
             "risk_gate": "WAITING",
             "point_size": 0.0,
             "updated_at": "",
+            "timeframe": "",
+            "confirmation_timeframe": "",
+            "candles": [],
             "screen_context": "",
             "mt5_screen_active": False,
             "suggested_next_step": "Open MetaTrader 5 to enable visual guidance.",

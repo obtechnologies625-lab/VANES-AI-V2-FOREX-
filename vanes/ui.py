@@ -68,6 +68,11 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             self.root, text="Paper: —", wraplength=390, justify="center"
         )
         self.paper_status.pack(pady=2)
+        self.broker_status = tk.Label(
+            self.root, text="Broker spec: waiting",
+            wraplength=390, justify="center"
+        )
+        self.broker_status.pack(pady=2)
         tk.Label(
             self.root,
             text="OBSERVING • PAPER ONLY • NO BROKER ORDERS",
@@ -95,6 +100,21 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         )
 
         stop_loss = take_profit = size = 0.0
+        risk_gate = "WAITING"
+        spec = self.adapter.symbol_spec(self.config.symbol)
+        if spec:
+            self.broker_status.config(
+                text=(
+                    f"Broker spec: ready • point {spec.point:g} • "
+                    f"tick {spec.tick_size:g}/{spec.tick_value:g} • "
+                    f"volume {spec.volume_min:g}-{spec.volume_max:g}"
+                )
+            )
+        else:
+            self.broker_status.config(
+                text="Broker spec: unavailable • risk sizing blocked"
+            )
+
         atr_value = atr(candles, self.strategy.config.atr_period)
         if (
             atr_value
@@ -108,7 +128,6 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             plan = build_risk_plan(entry, guidance.direction.value, atr_value)
             if plan:
                 stop_loss, take_profit = plan.stop_loss, plan.take_profit
-                spec = self.adapter.symbol_spec(self.config.symbol)
                 if spec:
                     size = position_size_from_tick(
                         self.config.account_balance,
@@ -143,15 +162,18 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                         max_daily_loss=self.config.account_balance
                         * self.config.max_daily_loss_percent / 100.0,
                     )
+                risk_gate = "PASS" if risk_check.allowed else "BLOCK"
                 digits = spec.digits if spec else max(
                     0, len(f"{point_size:.10f}".rstrip("0").split(".")[-1])
                 )
                 self.risk.config(
                     text=(
                         f"Reference SL: {stop_loss:.{digits}f}  "
-                        f"TP: {take_profit:.{digits}f}\n"
+                        f"TP: {take_profit:.{digits}f}
+"
                         f"Risk size reference: {size:.4f}  "
-                        f"R:R {plan.risk_reward:.1f}:1\n"
+                        f"R:R {plan.risk_reward:.1f}:1
+"
                         f"Risk gate: {risk_check.reason}"
                     )
                 )
@@ -181,16 +203,29 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.confidence.config(text=f"Confidence: {guidance.confidence:.0%}")
         self.reason.config(text=guidance.reason)
 
-        if snapshot.bid is None:
+        digits = spec.digits if spec else max(
+            0, len(f"{point_size:.10f}".rstrip("0").split(".")[-1])
+        )
+        if snapshot.bid is None or snapshot.ask is None:
             self.status.config(text=f"{self.config.platform}: waiting")
             self.quote.config(text="Bid: —   Ask: —   Spread: —")
         else:
-            self.status.config(text=f"{self.config.platform}: connected")
+            self.status.config(
+                text=(
+                    f"{self.config.platform}: connected • "
+                    f"point {point_size:g}"
+                )
+            )
+            spread_text = "unavailable"
+            if snapshot.spread is not None:
+                spread_text = f"{snapshot.spread:.{digits}f}"
+                if spread_points is not None:
+                    spread_text += f" ({spread_points:.1f} pt)"
             self.quote.config(
                 text=(
-                    f"Bid: {snapshot.bid:.5f}   "
-                    f"Ask: {snapshot.ask:.5f}   "
-                    f"Spread: {snapshot.spread:.5f}"
+                    f"Bid: {snapshot.bid:.{digits}f}   "
+                    f"Ask: {snapshot.ask:.{digits}f}   "
+                    f"Spread: {spread_text}"
                 )
             )
 
@@ -208,6 +243,9 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 paper_balance=self.paper.balance if self.paper else 0.0,
                 paper_daily_pnl=self.paper.daily_pnl if self.paper else 0.0,
                 paper_open_trades=len(self.paper.trades) if self.paper else 0,
+                broker_ready=spec is not None,
+                risk_gate=risk_gate,
+                point_size=point_size,
             )
 
         self.root.after(self.config.refresh_ms, self.refresh)

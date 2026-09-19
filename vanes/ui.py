@@ -276,7 +276,10 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 take_profit=take_profit,
                 paper_balance=self.paper.balance if self.paper else 0.0,
                 paper_daily_pnl=self.paper.daily_pnl if self.paper else 0.0,
-                paper_open_trades=len(self.paper.trades) if self.paper else 0,
+                paper_open_trades=(
+                    sum(1 for trade in self.paper.trades if trade.closed_at is None)
+                    if self.paper else 0
+                ),
                 broker_ready=spec is not None,
                 risk_gate=risk_gate,
                 point_size=point_size,
@@ -285,45 +288,45 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 mt5_screen_active=screen.mt5_active,
                 suggested_next_step=next_step(screen, guidance.direction.value),
             )
-            if self.cloud_publisher:
-                self.cloud_publisher.publish({
-                    "symbol": self.config.symbol,
-                    "direction": guidance.direction.value,
-                    "confidence": guidance.confidence,
-                    "bid": snapshot.bid or 0.0,
-                    "ask": snapshot.ask or 0.0,
-                    "spread": snapshot.spread or 0.0,
-                    "reason": guidance.reason,
-                    "stop_loss": stop_loss,
-                    "take_profit": take_profit,
-                    "paper_balance": self.paper.balance if self.paper else 0.0,
-                    "paper_daily_pnl": self.paper.daily_pnl if self.paper else 0.0,
-                    "alerts": [
-                        {"kind": alert.kind, "message": alert.message}
-                        for alert in new_alerts
-                    ],
-                    "paper_open_trades": (
-                        sum(1 for trade in self.paper.trades
-                            if trade.closed_at is None)
-                        if self.paper else 0
-                    ),
-                    "paper_trades": [
-                        {
-                            "direction": trade.direction,
-                            "entry": trade.entry,
-                            "stop_loss": trade.stop_loss,
-                            "take_profit": trade.take_profit,
-                            "size": trade.size,
-                            "opened_at": trade.opened_at,
-                            "closed_at": trade.closed_at,
-                            "exit_price": trade.exit_price,
-                        }
-                        for trade in (self.paper.trades[-20:] if self.paper else [])
-                    ],
-                    "broker_ready": spec is not None,
-                    "risk_gate": risk_gate,
-                    "point_size": point_size,
-                })
+        if self.cloud_publisher:
+            self.cloud_publisher.publish({
+                "symbol": self.config.symbol,
+                "direction": guidance.direction.value,
+                "confidence": guidance.confidence,
+                "bid": snapshot.bid or 0.0,
+                "ask": snapshot.ask or 0.0,
+                "spread": snapshot.spread or 0.0,
+                "reason": guidance.reason,
+                "stop_loss": stop_loss,
+                "take_profit": take_profit,
+                "paper_balance": self.paper.balance if self.paper else 0.0,
+                "paper_daily_pnl": self.paper.daily_pnl if self.paper else 0.0,
+                "alerts": [
+                    {"kind": alert.kind, "message": alert.message}
+                    for alert in new_alerts
+                ],
+                "paper_open_trades": (
+                    sum(1 for trade in self.paper.trades
+                        if trade.closed_at is None)
+                    if self.paper else 0
+                ),
+                "paper_trades": [
+                    {
+                        "direction": trade.direction,
+                        "entry": trade.entry,
+                        "stop_loss": trade.stop_loss,
+                        "take_profit": trade.take_profit,
+                        "size": trade.size,
+                        "opened_at": trade.opened_at,
+                        "closed_at": trade.closed_at,
+                        "exit_price": trade.exit_price,
+                    }
+                    for trade in (self.paper.trades[-20:] if self.paper else [])
+                ],
+                "broker_ready": spec is not None,
+                "risk_gate": risk_gate,
+                "point_size": point_size,
+            })
 
         self.root.after(self.config.refresh_ms, self.refresh)
 

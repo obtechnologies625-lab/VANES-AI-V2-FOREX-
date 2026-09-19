@@ -136,3 +136,12 @@ Example:
 `value_per_price_unit` is deliberately explicit because real FX cash-per-price-unit varies by broker, symbol and account currency. It must be calibrated from MT5 symbol metadata before treating a backtest as a broker-accurate P/L estimate.
 
 The current engine is a single-symbol/single-timeframe replay. Multi-timeframe historical alignment and broker-accurate tick economics are separate hardening steps.
+
+
+### Forex accuracy boundary
+
+For broker-accurate backtests, populate `BacktestConfig` with the MT5 symbol's `trade_tick_size`, `trade_tick_value`, `volume_min`, `volume_max`, and `volume_step` from `MT5Adapter.symbol_spec()`. The engine then sizes volume from actual cash risk instead of assuming one generic price-unit value.
+
+Execution costs are explicit: `spread_price` models the quoted spread and `commission_per_lot` models commission. Historical OHLC candles do not contain historical bid/ask spreads, commissions, swaps, or tick-by-tick execution, so an OHLC-only backtest cannot honestly claim tick-level broker accuracy. For that level of accuracy, VANES must replay MT5 tick data and the broker's historical contract/symbol settings.
+
+The backtester sorts MT5 candles chronologically, never uses future candles for a signal, and applies conservative stop-first handling when one OHLC candle touches both stop and target.

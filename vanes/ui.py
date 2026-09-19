@@ -11,7 +11,7 @@ from .risk import build_risk_plan, position_size
 from .strategy import RuleBasedStrategy
 
 
-class Overlay:  # pylint: disable=too-many-instance-attributes
+class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments
     """Display live VANES analysis without executing broker orders."""
 
     def __init__(

@@ -1,5 +1,6 @@
 """Realtime, local market chatbot for VANES-AI V2."""
 
+# pylint: disable=line-too-long,too-many-return-statements
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import re

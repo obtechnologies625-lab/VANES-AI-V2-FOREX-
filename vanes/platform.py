@@ -6,6 +6,19 @@ from .market import Candle
 from .signals import MarketSnapshot
 
 
+@dataclass(frozen=True)
+class SymbolSpec:
+    """Broker symbol economics needed for accurate risk calculations."""
+
+    point: float
+    digits: int
+    tick_size: float
+    tick_value: float
+    volume_min: float
+    volume_max: float
+    volume_step: float
+
+
 @dataclass
 class PlatformStatus:
     """Report platform connection state."""
@@ -25,10 +38,15 @@ class PlatformAdapter:
         """Return the latest quote for a symbol."""
         return MarketSnapshot(symbol=symbol)
 
+    def symbol_spec(self, symbol: str) -> SymbolSpec | None:
+        """Return broker-provided symbol economics."""
+        del symbol
+        return None
+
     def point_size(self, symbol: str) -> float:
         """Return the instrument's minimum quoted price step."""
-        del symbol
-        return 0.00001
+        spec = self.symbol_spec(symbol)
+        return spec.point if spec else 0.00001
 
     def candles(
         self, symbol: str, timeframe: str, count: int = 150
@@ -63,49 +81,59 @@ class MT5Adapter(PlatformAdapter):
         try:
             import MetaTrader5 as mt5  # pylint: disable=import-outside-toplevel,import-error
         except ImportError:
-            return PlatformStatus(
-                False, "MetaTrader5 package is not installed"
-            )
+            return PlatformStatus(False, "MetaTrader5 package is not installed")
         if not mt5.initialize():
-            error = mt5.last_error()
             return PlatformStatus(
-                False, f"MetaTrader 5 initialize() failed: {error}"
+                False, f"MetaTrader 5 initialize() failed: {mt5.last_error()}"
             )
         self._mt5 = mt5
         return PlatformStatus(True, "Connected to MetaTrader 5")
 
+    def _select(self, symbol: str) -> bool:
+        """Select a symbol and report whether it is usable."""
+        return self._mt5 is not None and self._mt5.symbol_select(symbol, True)
+
     def snapshot(self, symbol: str) -> MarketSnapshot:
         """Read the latest bid/ask quote."""
-        if self._mt5 is None:
-            return MarketSnapshot(symbol=symbol)
-        if not self._mt5.symbol_select(symbol, True):
+        if not self._select(symbol):
             return MarketSnapshot(symbol=symbol)
         tick = self._mt5.symbol_info_tick(symbol)
-        if tick is None or tick.bid <= 0 or tick.ask <= 0:
+        if tick is None or tick.bid <= 0 or tick.ask <= 0 or tick.ask < tick.bid:
             return MarketSnapshot(symbol=symbol)
         return MarketSnapshot(
-            symbol,
-            float(tick.bid),
-            float(tick.ask),
-            float(tick.ask - tick.bid),
+            symbol, float(tick.bid), float(tick.ask), float(tick.ask - tick.bid)
         )
 
-    def point_size(self, symbol: str) -> float:
-        """Return the MT5 symbol point size."""
-        if self._mt5 is None or not self._mt5.symbol_select(symbol, True):
-            return super().point_size(symbol)
+    def symbol_spec(self, symbol: str) -> SymbolSpec | None:
+        """Read tick economics and volume limits from MT5."""
+        if not self._select(symbol):
+            return None
         info = self._mt5.symbol_info(symbol)
-        if info is None or info.point <= 0:
-            return super().point_size(symbol)
-        return float(info.point)
+        if info is None:
+            return None
+        fields = (
+            info.point, info.digits, info.trade_tick_size, info.trade_tick_value,
+            info.volume_min, info.volume_max, info.volume_step,
+        )
+        if any(value is None for value in fields):
+            return None
+        if (
+            info.point <= 0 or info.trade_tick_size <= 0 or info.trade_tick_value <= 0
+            or info.volume_min <= 0 or info.volume_max < info.volume_min
+            or info.volume_step <= 0
+        ):
+            return None
+        return SymbolSpec(
+            float(info.point), int(info.digits), float(info.trade_tick_size),
+            float(info.trade_tick_value), float(info.volume_min),
+            float(info.volume_max), float(info.volume_step),
+        )
 
     def candles(
         self, symbol: str, timeframe: str = "M15", count: int = 150
     ) -> list[Candle]:
         """Read historical OHLCV candles from MetaTrader 5."""
-        if self._mt5 is None or count <= 0:
-            return []
-        if not self._mt5.symbol_select(symbol, True):
+        if not self._select(symbol) or count <= 0:
             return []
         tf_name = self.TIMEFRAMES.get(timeframe.upper())
         if tf_name is None:
@@ -115,17 +143,14 @@ class MT5Adapter(PlatformAdapter):
         )
         if rates is None:
             return []
-        return [
+        candles = [
             Candle(
-                int(rate["time"]),
-                float(rate["open"]),
-                float(rate["high"]),
-                float(rate["low"]),
-                float(rate["close"]),
-                float(rate["tick_volume"]),
+                int(rate["time"]), float(rate["open"]), float(rate["high"]),
+                float(rate["low"]), float(rate["close"]), float(rate["tick_volume"]),
             )
             for rate in rates
         ]
+        return sorted(candles, key=lambda candle: candle.time)
 
     def close(self) -> None:
         """Shut down the MetaTrader 5 connection."""

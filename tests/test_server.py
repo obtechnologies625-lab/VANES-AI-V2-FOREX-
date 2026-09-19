@@ -37,6 +37,32 @@ class ServerTests(unittest.TestCase):
             bridge.stop()
             thread.join(timeout=2)
 
+    def test_realtime_chat_endpoint(self):
+        bridge = LocalBridge(port=0)
+        port = bridge.server.server_address[1]
+        bridge.update(symbol="EURUSD", direction="BUY", confidence=0.8, reason="test")
+        thread = threading.Thread(target=bridge.start)
+        thread.start()
+        try:
+            with urlopen(
+                f"http://127.0.0.1:{port}/chat", timeout=2
+            ) as response:
+                self.assertIn(b"VANES-AI V2", response.read())
+            import urllib.request
+            request = urllib.request.Request(
+                f"http://127.0.0.1:{port}/chat",
+                data=json.dumps({"message": "what is the signal?"}).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with urlopen(request, timeout=2) as response:
+                payload = json.loads(response.read())
+                self.assertEqual(payload["intent"], "signal")
+                self.assertIn("BUY", payload["text"])
+        finally:
+            bridge.stop()
+            thread.join(timeout=2)
+
     def test_state_updates_are_serialized(self):
         bridge = LocalBridge(port=0)
         bridge.update(symbol="EURUSD")

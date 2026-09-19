@@ -23,7 +23,7 @@ def build_risk_plan(
     reward_ratio: float = 2.0,
 ) -> RiskPlan | None:
     """Build a reference risk plan without submitting an order."""
-    if entry <= 0 or atr_value <= 0:
+    if entry <= 0 or atr_value <= 0 or stop_atr <= 0 or reward_ratio <= 0:
         return None
     risk_distance = atr_value * stop_atr
     reward_distance = risk_distance * reward_ratio
@@ -38,3 +38,25 @@ def build_risk_plan(
     return RiskPlan(
         entry, stop, target, risk_distance, reward_distance, reward_ratio
     )
+
+
+def position_size(
+    balance: float,
+    risk_percent: float,
+    risk_distance: float,
+    value_per_price_unit: float = 1.0,
+) -> float:
+    """Calculate a reference position size from account risk."""
+    if balance <= 0 or risk_percent <= 0 or risk_distance <= 0:
+        return 0.0
+    if value_per_price_unit <= 0:
+        return 0.0
+    risk_cash = balance * risk_percent / 100.0
+    return risk_cash / (risk_distance * value_per_price_unit)
+
+
+def daily_loss_limit(balance: float, percent: float) -> float:
+    """Return the maximum allowed daily loss in account currency."""
+    if balance <= 0 or percent <= 0:
+        return 0.0
+    return balance * percent / 100.0

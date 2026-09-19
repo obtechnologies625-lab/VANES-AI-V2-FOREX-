@@ -31,6 +31,7 @@ class CloudStatePublisher:
         "paper_daily_pnl",
         "paper_open_trades",
         "paper_trades",
+        "alerts",
         "point_size",
     )
 

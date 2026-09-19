@@ -1,11 +1,9 @@
 """Read-only alert generation for VANES market state."""
 
-from dataclasses import dataclass
+from typing import NamedTuple
 
 
-@dataclass(frozen=True)
-# pylint: disable=too-few-public-methods
-class Alert:
+class Alert(NamedTuple):
     """Represent a user-facing market alert."""
 
     kind: str

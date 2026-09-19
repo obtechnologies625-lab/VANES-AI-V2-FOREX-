@@ -5,7 +5,7 @@ from datetime import date
 
 
 @dataclass(frozen=True)
-class PaperTrade:
+class PaperTrade:  # pylint: disable=too-many-instance-attributes
     """Represent a simulated trade."""
 
     direction: str
@@ -61,7 +61,7 @@ class PaperTrader:
         self.trades.append(trade)
         return trade
 
-    def close_trade(
+    def close_trade(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self, trade: PaperTrade, exit_price: float, closed_at: int
     ) -> float:
         """Close a simulated trade and update balance."""

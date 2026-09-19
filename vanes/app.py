@@ -1,10 +1,14 @@
+"""Application entry point for VANES-AI V2."""
+
 from .config import AppConfig
 from .platform import MT5Adapter
 from .server import LocalBridge
 from .strategy import RuleBasedStrategy
 from .ui import Overlay
 
+
 def main():
+    """Start the VANES desktop observer and local MT5 bridge."""
     config = AppConfig()
     adapter = MT5Adapter()
     bridge = LocalBridge()
@@ -25,6 +29,7 @@ def main():
     finally:
         bridge.stop()
         adapter.close()
+
 
 if __name__ == "__main__":
     main()

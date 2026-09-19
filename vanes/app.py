@@ -1,5 +1,6 @@
 from .config import AppConfig
 from .platform import MT5Adapter
+from .strategy import RuleBasedStrategy
 from .ui import Overlay
 
 def main():
@@ -9,7 +10,11 @@ def main():
     print(f"VANES-AI V2: {status.message}")
 
     try:
-        Overlay(config, adapter).run()
+        Overlay(
+            config=config,
+            adapter=adapter,
+            strategy=RuleBasedStrategy(),
+        ).run()
     finally:
         adapter.close()
 

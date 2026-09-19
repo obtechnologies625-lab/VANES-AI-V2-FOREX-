@@ -39,6 +39,18 @@ class CloudPublisherTests(unittest.TestCase):
             "paper_daily_pnl": 0,
             "paper_open_trades": 0,
             "point_size": 0.00001,
+            "paper_trades": [
+                {
+                    "direction": "BUY",
+                    "entry": 1.1,
+                    "stop_loss": 1.099,
+                    "take_profit": 1.102,
+                    "size": 0.1,
+                    "opened_at": 1,
+                    "closed_at": None,
+                    "exit_price": None,
+                }
+            ],
             "broker_password": "must-not-send",
         }
         self.assertTrue(publisher.publish(state))
@@ -46,6 +58,7 @@ class CloudPublisherTests(unittest.TestCase):
         body = json.loads(request.data.decode("utf-8"))
         self.assertNotIn("broker_password", body)
         self.assertEqual(body["symbol"], "EURUSD")
+        self.assertEqual(body["paper_trades"][0]["direction"], "BUY")
         self.assertEqual(
             request.headers["Authorization"], "Bearer secret"
         )

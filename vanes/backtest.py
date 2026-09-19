@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from math import isfinite
 
-from .market import Candle, atr
+from .market import Candle, Tick, atr
 from .risk import build_risk_plan, position_size, position_size_from_tick
 from .signals import Direction
 from .strategy import RuleBasedStrategy
@@ -27,6 +27,7 @@ class BacktestConfig:  # pylint: disable=too-many-instance-attributes
     spread_price: float = 0.0
     commission_per_lot: float = 0.0
     max_trades: int | None = None
+    point_size: float = 0.00001
 
 
 @dataclass(frozen=True)
@@ -282,4 +283,249 @@ def _build_report(
         max_drawdown,
         max_drawdown_percent,
         tuple(trades),
+    )
+
+
+def run_tick_backtest(
+    candles: list[Candle],
+    ticks: list[Tick],
+    strategy: RuleBasedStrategy | None = None,
+    config: BacktestConfig | None = None,
+) -> BacktestReport:
+    """Replay strategy signals with historical bid/ask ticks for execution.
+
+    Indicators use only candles strictly before each decision candle. BUY
+    entries use ask and BUY exits use bid; SELL entries use bid and SELL exits
+    use ask. Stops and targets are evaluated tick-by-tick, removing the OHLC
+    ambiguity about which level was touched first.
+    """
+    cfg = config or BacktestConfig()
+    engine = strategy or RuleBasedStrategy()
+    if cfg.starting_balance <= 0 or cfg.risk_percent <= 0:
+        raise ValueError("starting_balance and risk_percent must be positive")
+    if cfg.point_size <= 0:
+        raise ValueError("point_size must be positive")
+    if cfg.commission_per_lot < 0:
+        raise ValueError("commission_per_lot cannot be negative")
+
+    ordered_candles = sorted(candles, key=lambda item: item.time)
+    ordered_ticks = sorted(ticks, key=lambda item: item.time_msc)
+    if len(ordered_candles) < 2 or not ordered_ticks:
+        return _empty_report(cfg.starting_balance)
+
+    balance = cfg.starting_balance
+    peak = balance
+    max_drawdown = 0.0
+    max_drawdown_percent = 0.0
+    trades: list[BacktestTrade] = []
+    open_trade = None
+    tick_index = 0
+
+    for index in range(1, len(ordered_candles)):
+        candle = ordered_candles[index]
+        start_msc = candle.time * 1000
+        end_msc = (
+            ordered_candles[index + 1].time * 1000
+            if index + 1 < len(ordered_candles)
+            else None
+        )
+        interval_ticks = []
+        while tick_index < len(ordered_ticks):
+            tick = ordered_ticks[tick_index]
+            if tick.time_msc < start_msc:
+                tick_index += 1
+                continue
+            if end_msc is not None and tick.time_msc >= end_msc:
+                break
+            interval_ticks.append(tick)
+            tick_index += 1
+        if not interval_ticks:
+            continue
+
+        consumed = 0
+        if open_trade is not None:
+            for consumed, tick in enumerate(interval_ticks):
+                exit_price = None
+                reason = None
+                if open_trade["direction"] == Direction.BUY:
+                    if tick.bid <= open_trade["stop_loss"]:
+                        exit_price, reason = open_trade["stop_loss"], "STOP"
+                    elif tick.bid >= open_trade["take_profit"]:
+                        exit_price, reason = open_trade["take_profit"], "TARGET"
+                else:
+                    if tick.ask >= open_trade["stop_loss"]:
+                        exit_price, reason = open_trade["stop_loss"], "STOP"
+                    elif tick.ask <= open_trade["take_profit"]:
+                        exit_price, reason = open_trade["take_profit"], "TARGET"
+                if exit_price is None:
+                    continue
+                pnl = _pnl(
+                    open_trade["direction"],
+                    open_trade["entry"],
+                    exit_price,
+                    open_trade["size"],
+                ) - cfg.commission_per_lot * open_trade["size"]
+                balance += pnl
+                trades.append(
+                    BacktestTrade(
+                        open_trade["direction"].value,
+                        open_trade["opened_at"],
+                        tick.time_msc // 1000,
+                        open_trade["entry"],
+                        exit_price,
+                        open_trade["stop_loss"],
+                        open_trade["take_profit"],
+                        open_trade["size"],
+                        pnl,
+                        reason,
+                    )
+                )
+                open_trade = None
+                peak = max(peak, balance)
+                drawdown = peak - balance
+                max_drawdown = max(max_drawdown, drawdown)
+                max_drawdown_percent = max(
+                    max_drawdown_percent,
+                    drawdown / peak * 100.0 if peak > 0 else 0.0,
+                )
+                consumed += 1
+                break
+            if open_trade is not None:
+                continue
+
+        if cfg.max_trades is not None and len(trades) >= cfg.max_trades:
+            break
+
+        history = ordered_candles[:index]
+        first = interval_ticks[consumed]
+        spread_points = (first.ask - first.bid) / cfg.point_size
+        guidance = engine.evaluate(history, spread_points=spread_points)
+        if guidance.direction == Direction.WAIT:
+            continue
+        atr_value = atr(history, engine.config.atr_period)
+        if atr_value is None:
+            continue
+
+        entry = first.ask if guidance.direction == Direction.BUY else first.bid
+        plan = build_risk_plan(
+            entry,
+            guidance.direction.value,
+            atr_value,
+            stop_atr=cfg.stop_atr,
+            reward_ratio=cfg.reward_ratio,
+        )
+        if plan is None:
+            continue
+
+        if cfg.tick_size is not None and cfg.tick_value is not None:
+            size = position_size_from_tick(
+                balance,
+                cfg.risk_percent,
+                plan.risk_distance,
+                cfg.tick_size,
+                cfg.tick_value,
+                cfg.volume_min,
+                cfg.volume_max,
+                cfg.volume_step,
+            )
+        else:
+            size = position_size(
+                balance,
+                cfg.risk_percent,
+                plan.risk_distance,
+                cfg.value_per_price_unit,
+            )
+        if not isfinite(size) or size <= 0:
+            continue
+
+        open_trade = {
+            "direction": guidance.direction,
+            "entry": entry,
+            "stop_loss": plan.stop_loss,
+            "take_profit": plan.take_profit,
+            "size": size,
+            "opened_at": first.time_msc // 1000,
+        }
+
+        for tick in interval_ticks[consumed + 1:]:
+            exit_price = None
+            reason = None
+            if open_trade["direction"] == Direction.BUY:
+                if tick.bid <= open_trade["stop_loss"]:
+                    exit_price, reason = open_trade["stop_loss"], "STOP"
+                elif tick.bid >= open_trade["take_profit"]:
+                    exit_price, reason = open_trade["take_profit"], "TARGET"
+            else:
+                if tick.ask >= open_trade["stop_loss"]:
+                    exit_price, reason = open_trade["stop_loss"], "STOP"
+                elif tick.ask <= open_trade["take_profit"]:
+                    exit_price, reason = open_trade["take_profit"], "TARGET"
+            if exit_price is None:
+                continue
+            pnl = _pnl(
+                open_trade["direction"],
+                open_trade["entry"],
+                exit_price,
+                open_trade["size"],
+            ) - cfg.commission_per_lot * open_trade["size"]
+            balance += pnl
+            trades.append(
+                BacktestTrade(
+                    open_trade["direction"].value,
+                    open_trade["opened_at"],
+                    tick.time_msc // 1000,
+                    open_trade["entry"],
+                    exit_price,
+                    open_trade["stop_loss"],
+                    open_trade["take_profit"],
+                    open_trade["size"],
+                    pnl,
+                    reason,
+                )
+            )
+            open_trade = None
+            peak = max(peak, balance)
+            drawdown = peak - balance
+            max_drawdown = max(max_drawdown, drawdown)
+            max_drawdown_percent = max(
+                max_drawdown_percent,
+                drawdown / peak * 100.0 if peak > 0 else 0.0,
+            )
+            break
+
+    if open_trade is not None:
+        final_tick = ordered_ticks[-1]
+        exit_price = (
+            final_tick.bid
+            if open_trade["direction"] == Direction.BUY
+            else final_tick.ask
+        )
+        pnl = _pnl(
+            open_trade["direction"],
+            open_trade["entry"],
+            exit_price,
+            open_trade["size"],
+        ) - cfg.commission_per_lot * open_trade["size"]
+        balance += pnl
+        trades.append(
+            BacktestTrade(
+                open_trade["direction"].value,
+                open_trade["opened_at"],
+                final_tick.time_msc // 1000,
+                open_trade["entry"],
+                exit_price,
+                open_trade["stop_loss"],
+                open_trade["take_profit"],
+                open_trade["size"],
+                pnl,
+                "END",
+            )
+        )
+
+    return _build_report(
+        cfg.starting_balance,
+        balance,
+        trades,
+        max_drawdown,
+        max_drawdown_percent,
     )

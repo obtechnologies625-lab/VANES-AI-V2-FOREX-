@@ -5,6 +5,9 @@ import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from .chat_ui import html_page
+from .chatbot import MarketChatbot
+
 
 class _Handler(BaseHTTPRequestHandler):
     """Serve the latest VANES state to MetaTrader 5."""
@@ -12,7 +15,16 @@ class _Handler(BaseHTTPRequestHandler):
     server_version = "VANES/0.2"
 
     def do_GET(self):  # pylint: disable=invalid-name
-        """Return state or health for local bridge requests."""
+        """Return state, health, or the embedded realtime chat UI."""
+        if self.path in {"/", "/chat"}:
+            payload = html_page().encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+            return
         if self.path == "/health":
             payload = json.dumps(
                 self.server.get_state()["health"],
@@ -28,6 +40,35 @@ class _Handler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         self.send_response(200)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(payload)))
+        self.end_headers()
+        self.wfile.write(payload)
+
+    def do_POST(self):  # pylint: disable=invalid-name
+        """Answer a local chatbot message using current VANES state."""
+        if self.path != "/chat":
+            self.send_response(404)
+            self.end_headers()
+            return
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if length <= 0 or length > 16_384:
+                raise ValueError("invalid request size")
+            body = json.loads(self.rfile.read(length))
+            message = body.get("message", "")
+            if not isinstance(message, str):
+                raise ValueError("message must be text")
+            reply = self.server.chatbot.reply(message)
+            payload = json.dumps(
+                {"text": reply.text, "intent": reply.intent},
+                separators=(",", ":"),
+            ).encode()
+            self.send_response(200)
+        except (ValueError, TypeError, json.JSONDecodeError) as exc:
+            payload = json.dumps({"error": str(exc)}).encode()
+            self.send_response(400)
         self.send_header("Content-Type", "application/json")
         self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(payload)))
@@ -71,6 +112,9 @@ class LocalBridge:
         }
         self.server = ThreadingHTTPServer((host, port), _Handler)
         self.server.get_state = self._get_state
+        self.server.chatbot = MarketChatbot(
+            lambda: self._get_state()["state"]
+        )
         self.thread = threading.Thread(
             target=self.server.serve_forever, daemon=True
         )

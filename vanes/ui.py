@@ -1,16 +1,16 @@
 import tkinter as tk
-
 from .config import AppConfig
 from .platform import PlatformAdapter
-from .signals import SignalEngine
+from .risk import build_risk_plan
+from .strategy import RuleBasedStrategy
 
 class Overlay:
-    """Always-on-top desktop observer panel; no automatic order execution."""
+    """Always-on-top market observer. It provides analysis, not automatic orders."""
 
-    def __init__(self, config: AppConfig, adapter: PlatformAdapter):
+    def __init__(self, config: AppConfig, adapter: PlatformAdapter, strategy: RuleBasedStrategy):
         self.config = config
         self.adapter = adapter
-        self.engine = SignalEngine()
+        self.strategy = strategy
 
         self.root = tk.Tk()
         self.root.title("VANES-AI V2 • FOREX")
@@ -20,28 +20,35 @@ class Overlay:
 
         tk.Label(
             self.root, text="VANES-AI V2 • FOREX",
-            font=("Segoe UI", 15, "bold")
-        ).pack(pady=(12, 3))
+            font=("Segoe UI", 16, "bold")
+        ).pack(pady=(12, 2))
 
         self.status = tk.Label(self.root, text="Connecting…")
         self.status.pack()
 
         self.signal = tk.Label(
             self.root, text="WAIT",
-            font=("Segoe UI", 28, "bold")
+            font=("Segoe UI", 30, "bold")
         )
-        self.signal.pack(pady=7)
+        self.signal.pack(pady=5)
+
+        self.confidence = tk.Label(self.root, text="Confidence: —")
+        self.confidence.pack()
 
         self.reason = tk.Label(
-            self.root, text="Waiting for market data",
-            wraplength=340
+            self.root, text="Collecting market data",
+            wraplength=390, justify="center"
         )
-        self.reason.pack(padx=12)
+        self.reason.pack(padx=15, pady=5)
 
-        self.quote = tk.Label(
-            self.root, text="Bid: —   Ask: —   Spread: —"
+        self.quote = tk.Label(self.root, text="Bid: —   Ask: —   Spread: —")
+        self.quote.pack(pady=5)
+
+        self.risk = tk.Label(
+            self.root, text="Risk plan: —",
+            wraplength=390, justify="center"
         )
-        self.quote.pack(pady=9)
+        self.risk.pack(pady=4)
 
         tk.Label(
             self.root,
@@ -53,14 +60,19 @@ class Overlay:
 
     def refresh(self):
         snapshot = self.adapter.snapshot(self.config.symbol)
-        guidance = self.engine.evaluate(snapshot)
+        candles = self.adapter.candles(
+            self.config.symbol, self.config.timeframe, 150
+        )
+        guidance = self.strategy.evaluate(candles)
 
         self.signal.config(text=guidance.direction.value)
+        self.confidence.config(text=f"Confidence: {guidance.confidence:.0%}")
         self.reason.config(text=guidance.reason)
 
         if snapshot.bid is None:
             self.status.config(text=f"{self.config.platform}: waiting")
             self.quote.config(text="Bid: —   Ask: —   Spread: —")
+            self.risk.config(text="Risk plan: waiting for quote/ATR")
         else:
             self.status.config(text=f"{self.config.platform}: connected")
             self.quote.config(
@@ -70,6 +82,25 @@ class Overlay:
                     f"Spread: {snapshot.spread:.5f}"
                 )
             )
+
+            atr_value = None
+            if len(candles) >= 15:
+                from .market import atr
+                atr_value = atr(candles, 14)
+
+            if atr_value and guidance.direction.value in ("BUY", "SELL"):
+                entry = snapshot.ask if guidance.direction.value == "BUY" else snapshot.bid
+                plan = build_risk_plan(entry, guidance.direction.value, atr_value)
+                if plan:
+                    self.risk.config(
+                        text=(
+                            f"Reference SL: {plan.stop_loss:.5f}  "
+                            f"TP: {plan.take_profit:.5f}  "
+                            f"R:R {plan.risk_reward:.1f}:1"
+                        )
+                    )
+            else:
+                self.risk.config(text="Risk plan: no active setup")
 
         self.root.after(self.config.refresh_ms, self.refresh)
 

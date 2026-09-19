@@ -25,6 +25,11 @@ class PlatformAdapter:
         """Return the latest quote for a symbol."""
         return MarketSnapshot(symbol=symbol)
 
+    def point_size(self, symbol: str) -> float:
+        """Return the instrument's minimum quoted price step."""
+        del symbol
+        return 0.00001
+
     def candles(
         self, symbol: str, timeframe: str, count: int = 150
     ) -> list[Candle]:
@@ -62,18 +67,21 @@ class MT5Adapter(PlatformAdapter):
                 False, "MetaTrader5 package is not installed"
             )
         if not mt5.initialize():
+            error = mt5.last_error()
             return PlatformStatus(
-                False, "MetaTrader 5 initialize() failed"
+                False, f"MetaTrader 5 initialize() failed: {error}"
             )
         self._mt5 = mt5
         return PlatformStatus(True, "Connected to MetaTrader 5")
 
     def snapshot(self, symbol: str) -> MarketSnapshot:
         """Read the latest bid/ask quote."""
-        if self._mt5 is None or not self._mt5.symbol_select(symbol, True):
+        if self._mt5 is None:
+            return MarketSnapshot(symbol=symbol)
+        if not self._mt5.symbol_select(symbol, True):
             return MarketSnapshot(symbol=symbol)
         tick = self._mt5.symbol_info_tick(symbol)
-        if tick is None:
+        if tick is None or tick.bid <= 0 or tick.ask <= 0:
             return MarketSnapshot(symbol=symbol)
         return MarketSnapshot(
             symbol,
@@ -82,15 +90,26 @@ class MT5Adapter(PlatformAdapter):
             float(tick.ask - tick.bid),
         )
 
+    def point_size(self, symbol: str) -> float:
+        """Return the MT5 symbol point size."""
+        if self._mt5 is None or not self._mt5.symbol_select(symbol, True):
+            return super().point_size(symbol)
+        info = self._mt5.symbol_info(symbol)
+        if info is None or info.point <= 0:
+            return super().point_size(symbol)
+        return float(info.point)
+
     def candles(
         self, symbol: str, timeframe: str = "M15", count: int = 150
     ) -> list[Candle]:
         """Read historical OHLCV candles from MetaTrader 5."""
-        if self._mt5 is None or not self._mt5.symbol_select(symbol, True):
+        if self._mt5 is None or count <= 0:
             return []
-        tf_name = self.TIMEFRAMES.get(
-            timeframe.upper(), "TIMEFRAME_M15"
-        )
+        if not self._mt5.symbol_select(symbol, True):
+            return []
+        tf_name = self.TIMEFRAMES.get(timeframe.upper())
+        if tf_name is None:
+            return []
         rates = self._mt5.copy_rates_from_pos(
             symbol, getattr(self._mt5, tf_name), 0, count
         )

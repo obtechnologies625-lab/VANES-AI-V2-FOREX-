@@ -102,6 +102,9 @@ class LocalBridge:
             "risk_gate": "WAITING",
             "point_size": 0.0,
             "updated_at": "",
+            "screen_context": "",
+            "mt5_screen_active": False,
+            "suggested_next_step": "Open MetaTrader 5 to enable visual guidance.",
         }
         self._state = initial
         self._health = {

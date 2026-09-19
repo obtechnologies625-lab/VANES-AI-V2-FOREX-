@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from .market import Candle, ema, rsi
+from .market import Candle, atr, ema, rsi
 from .signals import Direction, Guidance
 from .structure import analyze_structure
 
@@ -25,6 +25,24 @@ class RuleBasedStrategy:  # pylint: disable=too-few-public-methods,too-many-retu
     def __init__(self, config: StrategyConfig | None = None):
         """Create a strategy with optional configuration."""
         self.config = config or StrategyConfig()
+
+    def diagnostics(self, candles: list[Candle]) -> dict:
+        """Return indicator and structure diagnostics for UI/chat."""
+        minimum = max(self.config.slow_ema + 2, self.config.rsi_period + 2, self.config.atr_period + 2)
+        if len(candles) < minimum:
+            return {"ready": False, "reason": "Collecting candle history"}
+        closes = [c.close for c in candles]
+        structure = analyze_structure(candles)
+        return {
+            "ready": True,
+            "fast_ema": ema(closes, self.config.fast_ema)[-1],
+            "slow_ema": ema(closes, self.config.slow_ema)[-1],
+            "rsi": rsi(closes, self.config.rsi_period),
+            "atr": atr(candles, self.config.atr_period),
+            "trend": structure.trend if structure else "UNKNOWN",
+            "support": structure.support if structure else None,
+            "resistance": structure.resistance if structure else None,
+        }
 
     def evaluate(
         self,

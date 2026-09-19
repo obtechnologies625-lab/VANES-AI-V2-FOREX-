@@ -193,3 +193,23 @@ For broker-accurate backtests, populate `BacktestConfig` with the MT5 symbol's `
 Execution costs are explicit: `spread_price` models the quoted spread and `commission_per_lot` models commission. Historical OHLC candles do not contain historical bid/ask spreads, commissions, swaps, or tick-by-tick execution, so an OHLC-only backtest cannot honestly claim tick-level broker accuracy. For that level of accuracy, VANES must replay MT5 tick data and the broker's historical contract/symbol settings.
 
 The backtester sorts MT5 candles chronologically, never uses future candles for a signal, and applies conservative stop-first handling when one OHLC candle touches both stop and target.
+
+
+## Cloudflare deployment
+
+VANES now includes a Cloudflare Worker command center under `cloudflare/`. This is the cloud web layer: it provides the browser dashboard, `/api/state`, `/api/health`, and `/api/chat`. The cloud chatbot is read-only and does not execute broker orders.
+
+### Deploy
+
+1. Install Node.js 18+.
+2. `cd cloudflare`
+3. `npm install`
+4. `npx wrangler login`
+5. `npx wrangler deploy`
+6. Open the Worker URL printed by Wrangler.
+
+### Live MT5 data
+
+Cloudflare Workers cannot run the Python MetaTrader5 package or the desktop Tkinter application. Keep the Python/MT5 process running on a machine that has MT5, then publish sanitized latest state to the Worker KV namespace if you want live cloud data. The Worker intentionally starts in safe WAIT mode when no state is available.
+
+This separation prevents a public web page from gaining direct broker access. Do not expose MT5 credentials or broker APIs to browser JavaScript.

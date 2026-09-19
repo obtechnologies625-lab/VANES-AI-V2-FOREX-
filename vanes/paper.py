@@ -18,7 +18,7 @@ class PaperTrade:  # pylint: disable=too-many-instance-attributes
     exit_price: float | None = None
 
 
-class PaperTrader:
+class PaperTrader:  # pylint: disable=too-many-arguments,too-many-positional-arguments
     """Track simulated trades and enforce a daily loss limit."""
 
     def __init__(self, starting_balance: float, max_daily_loss: float):

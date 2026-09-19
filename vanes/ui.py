@@ -34,9 +34,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
 
         self.root = tk.Tk()
         self.root.title("VANES-AI V2 • FOREX")
-        self.root.geometry(
-            f"{config.overlay_width}x{config.overlay_height}"
-        )
+        self.root.geometry(f"{config.overlay_width}x{config.overlay_height}")
         self.root.resizable(False, False)
         self.root.attributes("-topmost", config.always_on_top)
 
@@ -88,9 +86,10 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             self.config.confirmation_timeframe,
             self.config.candle_count,
         )
+        point_size = self.adapter.point_size(self.config.symbol)
         spread_points = None
-        if snapshot.spread is not None and snapshot.bid:
-            spread_points = snapshot.spread / 0.00001
+        if snapshot.spread is not None and point_size > 0:
+            spread_points = snapshot.spread / point_size
         guidance = self.strategy.evaluate(
             candles, spread_points=spread_points, confirmation=confirmation
         )
@@ -114,9 +113,11 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                     self.config.risk_percent,
                     plan.risk_distance,
                 )
+                digits = max(0, len(f"{point_size:.10f}".rstrip("0").split(".")[-1]))
                 self.risk.config(
                     text=(
-                        f"Reference SL: {stop_loss:.5f}  TP: {take_profit:.5f}\n"
+                        f"Reference SL: {stop_loss:.{digits}f}  "
+                        f"TP: {take_profit:.{digits}f}\n"
                         f"Risk size reference: {size:.4f}  "
                         f"R:R {plan.risk_reward:.1f}:1"
                     )

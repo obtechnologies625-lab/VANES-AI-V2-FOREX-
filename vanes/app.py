@@ -1,6 +1,7 @@
 """Application entry point for VANES-AI V2."""
 
 from .audit import AuditLogger
+from .cloud import CloudStatePublisher
 from .config import AppConfig
 from .paper import PaperTrader
 from .platform import MT5Adapter
@@ -19,6 +20,11 @@ def main():
         StrategyConfig(max_spread_points=config.max_spread_points)
     )
     audit = AuditLogger(config.audit_path)
+    cloud_publisher = CloudStatePublisher.from_environment()
+    if cloud_publisher:
+        print("VANES cloud publishing: enabled")
+    else:
+        print("VANES cloud publishing: disabled")
     paper = PaperTrader(
         config.paper_start_balance,
         daily_loss_limit(
@@ -46,6 +52,7 @@ def main():
             bridge=bridge,
             audit=audit,
             paper=paper,
+            cloud_publisher=cloud_publisher,
         ).run()
     finally:
         bridge.stop()

@@ -2,10 +2,6 @@ name = "vanes-ai-v2"
 main = "src/index.js"
 compatibility_date = "2026-09-19"
 
-# Optional KV storage for the latest VANES state.
-# Create a namespace with: wrangler kv namespace create VANES_STATE
-# Then replace both placeholder IDs below.
-[[kv_namespaces]]
-binding = "VANES_STATE"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
-preview_id = "REPLACE_WITH_KV_NAMESPACE_ID"
+# The first deployment runs in safe cloud mode with a WAIT state.
+# Live MT5/Python data is intentionally not exposed directly to the browser.
+# Add a real KV namespace later if you want persistent cloud state.

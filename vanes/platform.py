@@ -56,7 +56,7 @@ class MT5Adapter(PlatformAdapter):
     def connect(self) -> PlatformStatus:
         """Initialize the MetaTrader 5 Python API."""
         try:
-            import MetaTrader5 as mt5
+            import MetaTrader5 as mt5  # pylint: disable=import-outside-toplevel,import-error
         except ImportError:
             return PlatformStatus(
                 False, "MetaTrader5 package is not installed"

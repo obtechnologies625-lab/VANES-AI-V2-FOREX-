@@ -35,6 +35,8 @@ class MarketChatbot:
             return ChatReply(self._status(state), "status")
         if any(word in lowered for word in ("quote", "price", "bid", "ask", "spread")):
             return ChatReply(self._quote(state), "quote")
+        if any(word in lowered for word in ("indicator", "ema", "rsi", "atr", "structure", "support", "resistance")):
+            return ChatReply(self._analysis(state), "analysis")
         if any(word in lowered for word in ("signal", "trade", "direction", "setup")):
             return ChatReply(self._signal(state), "signal")
         if any(word in lowered for word in ("risk", "stop", "target", "sl", "tp")):
@@ -60,6 +62,18 @@ class MarketChatbot:
     def _signal(self, state):
         """Format the current guidance."""
         return f"Guidance: {state.get('direction', 'WAIT')} ({float(state.get('confidence', 0)):.1%} confidence). {state.get('reason', 'No reason available')}"
+
+    def _analysis(self, state):
+        """Format strategy diagnostics when available."""
+        analysis = state.get("analysis") or {}
+        if not analysis.get("ready"):
+            return str(analysis.get("reason", "Indicators are not ready."))
+        return (f"Trend {analysis.get('trend', 'UNKNOWN')}; "
+                f"EMA {self._number(analysis.get('fast_ema'))}/{self._number(analysis.get('slow_ema'))}; "
+                f"RSI {self._number(analysis.get('rsi'), 1)}; "
+                f"ATR {self._number(analysis.get('atr'))}; "
+                f"support {self._number(analysis.get('support'))}; "
+                f"resistance {self._number(analysis.get('resistance'))}.")
 
     def _risk(self, state):
         """Format the reference risk state."""

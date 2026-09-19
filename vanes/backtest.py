@@ -23,7 +23,7 @@ class BacktestConfig:  # pylint: disable=too-many-instance-attributes
 
 
 @dataclass(frozen=True)
-class BacktestTrade:
+class BacktestTrade:  # pylint: disable=too-many-instance-attributes
     """Record one completed historical trade."""
 
     direction: str
@@ -64,11 +64,12 @@ def _pnl(direction: Direction, entry: float, exit_price: float, size: float) -> 
     return (exit_price - entry) * size * multiplier
 
 
+# pylint: disable=too-many-locals,too-many-branches,too-many-statements
 def run_backtest(
     candles: list[Candle],
     strategy: RuleBasedStrategy | None = None,
     config: BacktestConfig | None = None,
-) -> BacktestReport:  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+) -> BacktestReport:
     """Replay candles without look-ahead and without broker order submission."""
     cfg = config or BacktestConfig()
     engine = strategy or RuleBasedStrategy()

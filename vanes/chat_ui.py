@@ -1,5 +1,6 @@
 """Embedded browser UI for the VANES realtime chatbot."""
 
+# pylint: disable=line-too-long
 
 def html_page():
     """Return the self-contained chat application."""

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-class AuditLogger:
+class AuditLogger:  # pylint: disable=too-few-public-methods
     """Write timestamped application events to a local JSONL file."""
 
     def __init__(self, path: str):

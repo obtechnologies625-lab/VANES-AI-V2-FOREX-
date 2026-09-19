@@ -17,7 +17,7 @@ class StrategyConfig:  # pylint: disable=too-few-public-methods
     min_confidence: float = 0.60
 
 
-class RuleBasedStrategy:
+class RuleBasedStrategy:  # pylint: disable=too-few-public-methods
     """Generate transparent, non-executing market guidance."""
 
     def __init__(self, config: StrategyConfig | None = None):

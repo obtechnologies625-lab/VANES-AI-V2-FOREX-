@@ -1,8 +1,9 @@
 """Trading-platform adapters for read-only market data."""
 
 from dataclasses import dataclass
+from datetime import datetime, timezone
 
-from .market import Candle
+from .market import Candle, Tick
 from .signals import MarketSnapshot
 
 
@@ -137,6 +138,13 @@ class MT5Adapter(PlatformAdapter):
             float(info.volume_max), float(info.volume_step),
         )
 
+    def ticks(
+        self, symbol: str, start_time: int, end_time: int
+    ) -> list[Tick]:
+        """Return historical bid/ask ticks between Unix-second timestamps."""
+        del symbol, start_time, end_time
+        return []
+
     def candles(
         self, symbol: str, timeframe: str = "M15", count: int = 150
     ) -> list[Candle]:
@@ -159,6 +167,36 @@ class MT5Adapter(PlatformAdapter):
             for rate in rates
         ]
         return sorted(candles, key=lambda candle: candle.time)
+
+    def ticks(
+        self, symbol: str, start_time: int, end_time: int
+    ) -> list[Tick]:
+        """Read historical bid/ask ticks from MetaTrader 5."""
+        if not self._select(symbol) or end_time <= start_time:
+            return []
+        start = datetime.fromtimestamp(start_time, tz=timezone.utc)
+        end = datetime.fromtimestamp(end_time, tz=timezone.utc)
+        rates = self._mt5.copy_ticks_range(
+            symbol, start, end, self._mt5.COPY_TICKS_ALL
+        )
+        if rates is None:
+            return []
+        ticks = []
+        for rate in rates:
+            bid = float(rate["bid"])
+            ask = float(rate["ask"])
+            if bid <= 0 or ask <= 0 or ask < bid:
+                continue
+            ticks.append(
+                Tick(
+                    int(rate["time_msc"]),
+                    bid,
+                    ask,
+                    float(rate["last"]),
+                    float(rate["volume"]),
+                )
+            )
+        return sorted(ticks, key=lambda tick: tick.time_msc)
 
     def close(self) -> None:
         """Shut down the MetaTrader 5 connection."""

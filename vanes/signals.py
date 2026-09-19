@@ -32,7 +32,7 @@ class Guidance:
     reason: str
 
 
-class SignalEngine:
+class SignalEngine:  # pylint: disable=too-few-public-methods
     """Provide a safe, read-only quote validation layer."""
 
     def evaluate(self, snapshot: MarketSnapshot) -> Guidance:

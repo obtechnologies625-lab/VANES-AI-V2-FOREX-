@@ -22,6 +22,10 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
     risk_percent: float = 1.0
     max_daily_loss_percent: float = 3.0
     max_spread_points: float = 25.0
+    chat_enabled: bool = True
+    chat_host: str = "127.0.0.1"
+    chat_port: int = 8765
+    paper_max_open_trades: int = 1
     paper_start_balance: float = 10000.0
     audit_path: str = "data/vanes_audit.jsonl"
 
@@ -48,6 +52,10 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
                 "VANES_MAX_DAILY_LOSS_PERCENT", 3.0, float
             ),
             max_spread_points=number("VANES_MAX_SPREAD_POINTS", 25.0, float),
+            chat_enabled=os.getenv("VANES_CHAT_ENABLED", "1") != "0",
+            chat_host=os.getenv("VANES_CHAT_HOST", "127.0.0.1"),
+            chat_port=number("VANES_CHAT_PORT", 8765, int),
+            paper_max_open_trades=number("VANES_PAPER_MAX_OPEN_TRADES", 1, int),
             paper_start_balance=number(
                 "VANES_PAPER_START_BALANCE", 10000.0, float
             ),

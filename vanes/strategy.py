@@ -28,7 +28,11 @@ class RuleBasedStrategy:  # pylint: disable=too-few-public-methods,too-many-retu
 
     def diagnostics(self, candles: list[Candle]) -> dict:
         """Return indicator and structure diagnostics for UI/chat."""
-        minimum = max(self.config.slow_ema + 2, self.config.rsi_period + 2, self.config.atr_period + 2)
+        minimum = max(
+            self.config.slow_ema + 2,
+            self.config.rsi_period + 2,
+            self.config.atr_period + 2,
+        )
         if len(candles) < minimum:
             return {"ready": False, "reason": "Collecting candle history"}
         closes = [c.close for c in candles]

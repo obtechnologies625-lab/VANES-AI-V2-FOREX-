@@ -44,9 +44,9 @@ class PlatformAdapter:
         return None
 
     def point_size(self, symbol: str) -> float:
-        """Return the instrument's minimum quoted price step."""
-        spec = self.symbol_spec(symbol)
-        return spec.point if spec else 0.00001
+        """Return a conservative fallback point size."""
+        del symbol
+        return 0.00001
 
     def candles(
         self, symbol: str, timeframe: str, count: int = 150
@@ -57,6 +57,7 @@ class PlatformAdapter:
 
     def close(self) -> None:
         """Close the platform connection."""
+        pass
 
 
 class MT5Adapter(PlatformAdapter):
@@ -126,11 +127,11 @@ class MT5Adapter(PlatformAdapter):
         )
         if any(value is None for value in fields):
             return None
-        if (
-            info.point <= 0 or info.trade_tick_size <= 0 or info.trade_tick_value <= 0
-            or info.volume_min <= 0 or info.volume_max < info.volume_min
-            or info.volume_step <= 0
-        ):
+        if info.point <= 0 or info.trade_tick_size <= 0:
+            return None
+        if info.trade_tick_value <= 0 or info.volume_min <= 0:
+            return None
+        if info.volume_max < info.volume_min or info.volume_step <= 0:
             return None
         return SymbolSpec(
             float(info.point), int(info.digits), float(info.trade_tick_size),

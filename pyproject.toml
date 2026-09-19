@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vanes-ai-v2-forex"
+version = "0.1.0"
+description = "VANES-AI V2 Forex observer and on-screen trading guidance application"
+requires-python = ">=3.10"
+dependencies = ["psutil>=5.9"]
+
+[project.scripts]
+vanes-forex = "vanes.app:main"
+
+[tool.setuptools.packages.find]
+include = ["vanes*"]

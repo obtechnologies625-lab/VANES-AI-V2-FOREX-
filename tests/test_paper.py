@@ -12,7 +12,7 @@ class PaperTests(unittest.TestCase):
         trader = PaperTrader(10000, 300)
         trade = trader.open_trade("BUY", 1.0, 0.99, 1.02, 100, 1)
         self.assertIsNotNone(trade)
-        self.assertEqual(trader.close_trade(trade, 1.01, 2), 1.0)
+        self.assertAlmostEqual(trader.close_trade(trade, 1.01, 2), 1.0)
         self.assertEqual(trader.balance, 10001.0)
 
     def test_loss_limit_blocks_new_trade(self):

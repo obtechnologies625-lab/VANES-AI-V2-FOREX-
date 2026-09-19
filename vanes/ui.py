@@ -284,6 +284,20 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 risk_gate=risk_gate,
                 point_size=point_size,
                 analysis=diagnostics,
+                timeframe=self.config.timeframe,
+                confirmation_timeframe=self.config.confirmation_timeframe,
+                candles=[
+                    {
+                        "time": candle.time,
+                        "open": candle.open,
+                        "high": candle.high,
+                        "low": candle.low,
+                        "close": candle.close,
+                        "volume": candle.volume,
+                    }
+                    for candle in candles[-200:]
+                ],
+                mt5_connected=snapshot.bid is not None and snapshot.ask is not None,
                 screen_context=screen.summary,
                 mt5_screen_active=screen.mt5_active,
                 suggested_next_step=next_step(screen, guidance.direction.value),

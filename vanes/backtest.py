@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from math import isfinite
 
 from .market import Candle, atr
-from .risk import build_risk_plan, position_size
+from .risk import build_risk_plan, position_size, position_size_from_tick
 from .signals import Direction
 from .strategy import RuleBasedStrategy
 
@@ -18,7 +18,14 @@ class BacktestConfig:  # pylint: disable=too-many-instance-attributes
     stop_atr: float = 1.5
     reward_ratio: float = 2.0
     value_per_price_unit: float = 1.0
+    tick_size: float | None = None
+    tick_value: float | None = None
+    volume_min: float = 0.01
+    volume_max: float = 100.0
+    volume_step: float = 0.01
     spread_points: float | None = None
+    spread_price: float = 0.0
+    commission_per_lot: float = 0.0
     max_trades: int | None = None
 
 
@@ -78,6 +85,8 @@ def run_backtest(
         raise ValueError("starting_balance must be positive")
     if cfg.risk_percent <= 0 or cfg.value_per_price_unit <= 0:
         raise ValueError("risk settings must be positive")
+    if cfg.spread_price < 0 or cfg.commission_per_lot < 0:
+        raise ValueError("execution costs cannot be negative")
     if len(candles) < 2:
         return _empty_report(cfg.starting_balance)
 
@@ -111,7 +120,7 @@ def run_backtest(
                     open_trade["entry"],
                     exit_price,
                     open_trade["size"],
-                )
+                ) - cfg.commission_per_lot * open_trade["size"]
                 balance += pnl
                 trades.append(
                     BacktestTrade(
@@ -151,6 +160,10 @@ def run_backtest(
             continue
 
         entry = candle.open
+        if guidance.direction == Direction.BUY:
+            entry += cfg.spread_price / 2.0
+        else:
+            entry -= cfg.spread_price / 2.0
         plan = build_risk_plan(
             entry,
             guidance.direction.value,
@@ -161,12 +174,24 @@ def run_backtest(
         if plan is None:
             continue
 
-        size = position_size(
-            balance,
-            cfg.risk_percent,
-            plan.risk_distance,
-            cfg.value_per_price_unit,
-        )
+        if cfg.tick_size is not None and cfg.tick_value is not None:
+            size = position_size_from_tick(
+                balance,
+                cfg.risk_percent,
+                plan.risk_distance,
+                cfg.tick_size,
+                cfg.tick_value,
+                cfg.volume_min,
+                cfg.volume_max,
+                cfg.volume_step,
+            )
+        else:
+            size = position_size(
+                balance,
+                cfg.risk_percent,
+                plan.risk_distance,
+                cfg.value_per_price_unit,
+            )
         if not isfinite(size) or size <= 0:
             continue
 
@@ -186,7 +211,7 @@ def run_backtest(
             open_trade["entry"],
             final.close,
             open_trade["size"],
-        )
+        ) - cfg.commission_per_lot * open_trade["size"]
         balance += pnl
         trades.append(
             BacktestTrade(

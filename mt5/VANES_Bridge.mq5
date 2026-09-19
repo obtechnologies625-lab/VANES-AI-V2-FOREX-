@@ -48,11 +48,12 @@ void OnTimer()
       double ask = JsonNumber(body, "ask", SymbolInfoDouble(_Symbol, SYMBOL_ASK));
       double sl = JsonNumber(body, "stop_loss", 0.0);
       double tp = JsonNumber(body, "take_profit", 0.0);
+      string nextStep = JsonString(body, "suggested_next_step", "Keep the MT5 chart visible.");
 
       string text = StringFormat(
          "Symbol: %s\nBid: %.5f  Ask: %.5f\nSpread: %.5f\n"
          "VANES: %s  %.0f%%\nSL: %.5f  TP: %.5f",
-         _Symbol, bid, ask, ask-bid, direction, confidence*100.0, sl, tp
+         _Symbol, bid, ask, ask-bid, direction, confidence*100.0, sl, tp, nextStep
       );
       ObjectSetString(0, state, OBJPROP_TEXT, "● PYTHON CONNECTED");
       ObjectSetString(0, info, OBJPROP_TEXT, text);
@@ -112,7 +113,7 @@ void CreatePanel()
    ObjectSetInteger(0, panel, OBJPROP_XDISTANCE, PanelX);
    ObjectSetInteger(0, panel, OBJPROP_YDISTANCE, PanelY);
    ObjectSetInteger(0, panel, OBJPROP_XSIZE, 330);
-   ObjectSetInteger(0, panel, OBJPROP_YSIZE, 190);
+   ObjectSetInteger(0, panel, OBJPROP_YSIZE, 230);
    ObjectSetInteger(0, panel, OBJPROP_BACK, false);
 
    ObjectCreate(0, title, OBJ_LABEL, 0, 0, 0);

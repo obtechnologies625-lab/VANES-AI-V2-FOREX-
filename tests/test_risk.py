@@ -7,6 +7,7 @@ from vanes.risk import (
     daily_loss_limit,
     position_size,
     position_size_from_tick,
+    validate_trade_risk,
 )
 
 

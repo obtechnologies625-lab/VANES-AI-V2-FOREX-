@@ -3,6 +3,7 @@
 import tkinter as tk
 
 from .audit import AuditLogger
+from .cloud import CloudStatePublisher
 from .config import AppConfig
 from .market import atr
 from .paper import PaperTrader
@@ -22,6 +23,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         bridge=None,
         audit: AuditLogger | None = None,
         paper: PaperTrader | None = None,
+        cloud_publisher: CloudStatePublisher | None = None,
     ):
         """Create the always-on-top observer window."""
         self.config = config
@@ -30,6 +32,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.bridge = bridge
         self.audit = audit
         self.paper = paper
+        self.cloud_publisher = cloud_publisher
         self.last_signal = None
 
         self.root = tk.Tk()
@@ -247,6 +250,24 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 point_size=point_size,
                 analysis=diagnostics,
             )
+            if self.cloud_publisher:
+                self.cloud_publisher.publish({
+                    "symbol": self.config.symbol,
+                    "direction": guidance.direction.value,
+                    "confidence": guidance.confidence,
+                    "bid": snapshot.bid or 0.0,
+                    "ask": snapshot.ask or 0.0,
+                    "spread": snapshot.spread or 0.0,
+                    "reason": guidance.reason,
+                    "stop_loss": stop_loss,
+                    "take_profit": take_profit,
+                    "paper_balance": self.paper.balance if self.paper else 0.0,
+                    "paper_daily_pnl": self.paper.daily_pnl if self.paper else 0.0,
+                    "paper_open_trades": len(self.paper.trades) if self.paper else 0,
+                    "broker_ready": spec is not None,
+                    "risk_gate": risk_gate,
+                    "point_size": point_size,
+                })
 
         self.root.after(self.config.refresh_ms, self.refresh)
 

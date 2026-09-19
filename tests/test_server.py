@@ -37,6 +37,32 @@ class ServerTests(unittest.TestCase):
             bridge.stop()
             thread.join(timeout=2)
 
+    def test_mt5_realtime_api_endpoint(self):
+        bridge = LocalBridge(port=0)
+        port = bridge.server.server_address[1]
+        bridge.update(
+            symbol="EURUSD",
+            timeframe="M15",
+            mt5_connected=True,
+            bid=1.1,
+            ask=1.1002,
+            candles=[{"time": 1, "open": 1.0, "high": 1.2,
+                      "low": 0.9, "close": 1.1, "volume": 10}],
+        )
+        thread = threading.Thread(target=bridge.start)
+        thread.start()
+        try:
+            with urlopen(
+                f"http://127.0.0.1:{port}/api/mt5", timeout=2
+            ) as response:
+                state = json.loads(response.read())
+                self.assertTrue(state["mt5_connected"])
+                self.assertEqual(state["timeframe"], "M15")
+                self.assertEqual(state["candles"][0]["close"], 1.1)
+        finally:
+            bridge.stop()
+            thread.join(timeout=2)
+
     def test_realtime_chat_endpoint(self):
         bridge = LocalBridge(port=0)
         port = bridge.server.server_address[1]

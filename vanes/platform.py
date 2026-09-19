@@ -104,6 +104,15 @@ class MT5Adapter(PlatformAdapter):
             symbol, float(tick.bid), float(tick.ask), float(tick.ask - tick.bid)
         )
 
+    def point_size(self, symbol: str) -> float:
+        """Return the MT5 symbol point size."""
+        if not self._select(symbol):
+            return 0.00001
+        info = self._mt5.symbol_info(symbol)
+        if info is None or info.point <= 0:
+            return 0.00001
+        return float(info.point)
+
     def symbol_spec(self, symbol: str) -> SymbolSpec | None:
         """Read tick economics and volume limits from MT5."""
         if not self._select(symbol):

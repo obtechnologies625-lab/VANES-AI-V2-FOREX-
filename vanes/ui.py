@@ -7,7 +7,7 @@ from .config import AppConfig
 from .market import atr
 from .paper import PaperTrader
 from .platform import PlatformAdapter
-from .risk import build_risk_plan, position_size
+from .risk import build_risk_plan, position_size_from_tick, validate_trade_risk
 from .strategy import RuleBasedStrategy
 
 
@@ -108,18 +108,51 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             plan = build_risk_plan(entry, guidance.direction.value, atr_value)
             if plan:
                 stop_loss, take_profit = plan.stop_loss, plan.take_profit
-                size = position_size(
-                    self.config.account_balance,
-                    self.config.risk_percent,
-                    plan.risk_distance,
+                spec = self.adapter.symbol_spec(self.config.symbol)
+                if spec:
+                    size = position_size_from_tick(
+                        self.config.account_balance,
+                        self.config.risk_percent,
+                        plan.risk_distance,
+                        spec.tick_size,
+                        spec.tick_value,
+                        spec.volume_min,
+                        spec.volume_max,
+                        spec.volume_step,
+                    )
+                    risk_check = validate_trade_risk(
+                        self.config.account_balance,
+                        self.config.risk_percent,
+                        plan.risk_distance,
+                        size,
+                        self.paper.daily_pnl if self.paper else 0.0,
+                        self.config.account_balance
+                        * self.config.max_daily_loss_percent / 100.0,
+                        spread_points,
+                        self.config.max_spread_points,
+                        spec.tick_size,
+                        spec.tick_value,
+                    )
+                else:
+                    size = 0.0
+                    risk_check = validate_trade_risk(
+                        self.config.account_balance,
+                        self.config.risk_percent,
+                        plan.risk_distance,
+                        0.0,
+                        max_daily_loss=self.config.account_balance
+                        * self.config.max_daily_loss_percent / 100.0,
+                    )
+                digits = spec.digits if spec else max(
+                    0, len(f"{point_size:.10f}".rstrip("0").split(".")[-1])
                 )
-                digits = max(0, len(f"{point_size:.10f}".rstrip("0").split(".")[-1]))
                 self.risk.config(
                     text=(
                         f"Reference SL: {stop_loss:.{digits}f}  "
                         f"TP: {take_profit:.{digits}f}\n"
                         f"Risk size reference: {size:.4f}  "
-                        f"R:R {plan.risk_reward:.1f}:1"
+                        f"R:R {plan.risk_reward:.1f}:1\n"
+                        f"Risk gate: {risk_check.reason}"
                     )
                 )
         else:

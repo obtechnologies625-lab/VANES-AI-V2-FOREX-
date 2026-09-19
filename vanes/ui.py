@@ -228,6 +228,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             )
 
         if self.bridge:
+            diagnostics = self.strategy.diagnostics(candles)
             self.bridge.update(
                 symbol=self.config.symbol,
                 direction=guidance.direction.value,
@@ -244,6 +245,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 broker_ready=spec is not None,
                 risk_gate=risk_gate,
                 point_size=point_size,
+                analysis=diagnostics,
             )
 
         self.root.after(self.config.refresh_ms, self.refresh)

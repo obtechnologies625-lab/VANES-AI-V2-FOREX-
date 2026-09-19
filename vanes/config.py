@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 
 @dataclass
-class AppConfig:
+class AppConfig:  # pylint: disable=too-many-instance-attributes
     """Configure the desktop observer and market-data source."""
 
     refresh_ms: int = 1500

@@ -29,7 +29,7 @@ def ema(values: Sequence[float], period: int) -> list[float]:
 
 def rsi(values: Sequence[float], period: int = 14) -> float | None:
     """Calculate the latest relative strength index."""
-    if len(values) < period + 1:
+    if period <= 0 or len(values) < period + 1:
         return None
     gains, losses = [], []
     for a, b in zip(values[-period - 1:-1], values[-period:]):
@@ -46,7 +46,7 @@ def rsi(values: Sequence[float], period: int = 14) -> float | None:
 
 def atr(candles: Sequence[Candle], period: int = 14) -> float | None:
     """Calculate the latest average true range."""
-    if len(candles) < period + 1:
+    if period <= 0 or len(candles) < period + 1:
         return None
     trs = []
     for previous, current in zip(
@@ -58,3 +58,13 @@ def atr(candles: Sequence[Candle], period: int = 14) -> float | None:
             abs(current.low - previous.close),
         ))
     return sum(trs) / len(trs)
+
+
+def swing_levels(
+    candles: Sequence[Candle], lookback: int = 20
+) -> tuple[float, float] | None:
+    """Return recent support and resistance levels."""
+    if lookback <= 0 or len(candles) < lookback:
+        return None
+    window = candles[-lookback:]
+    return min(c.low for c in window), max(c.high for c in window)

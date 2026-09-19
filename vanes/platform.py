@@ -41,7 +41,6 @@ class PlatformAdapter:
     def symbol_spec(self, symbol: str) -> SymbolSpec | None:
         """Return broker-provided symbol economics."""
         del symbol
-        return None
 
     def point_size(self, symbol: str) -> float:
         """Return a conservative fallback point size."""

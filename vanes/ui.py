@@ -2,6 +2,7 @@
 
 import tkinter as tk
 
+from .alerts import AlertEngine
 from .audit import AuditLogger
 from .cloud import CloudStatePublisher
 from .config import AppConfig
@@ -34,6 +35,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.paper = paper
         self.cloud_publisher = cloud_publisher
         self.last_signal = None
+        self.alerts = AlertEngine()
 
         self.root = tk.Tk()
         self.root.title("VANES-AI V2 • FOREX")
@@ -192,6 +194,19 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                     reason=guidance.reason,
                 )
 
+        stale = snapshot.bid is None or snapshot.ask is None
+        new_alerts = self.alerts.evaluate(
+            guidance.direction.value, guidance.confidence, risk_gate, stale
+        )
+        for alert in new_alerts:
+            if self.audit:
+                self.audit.write(
+                    "alert",
+                    symbol=self.config.symbol,
+                    kind=alert.kind,
+                    message=alert.message,
+                )
+
         if self.paper:
             self.paper_status.config(
                 text=(
@@ -263,6 +278,10 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                     "take_profit": take_profit,
                     "paper_balance": self.paper.balance if self.paper else 0.0,
                     "paper_daily_pnl": self.paper.daily_pnl if self.paper else 0.0,
+                    "alerts": [
+                        {"kind": alert.kind, "message": alert.message}
+                        for alert in new_alerts
+                    ],
                     "paper_open_trades": (
                         sum(1 for trade in self.paper.trades
                             if trade.closed_at is None)

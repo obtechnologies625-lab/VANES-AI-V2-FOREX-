@@ -101,7 +101,7 @@ class RiskCheck:
     daily_loss_limit_cash: float
 
 
-def validate_trade_risk(
+def validate_trade_risk(  # pylint: disable=too-many-arguments,too-many-positional-arguments,too-many-return-statements
     balance: float,
     risk_percent: float,
     risk_distance: float,
@@ -113,31 +113,47 @@ def validate_trade_risk(
     tick_size: float | None = None,
     tick_value: float | None = None,
 ) -> RiskCheck:
-    """Validate account, daily-loss, spread, and optional broker risk limits."""
+    """Validate account, daily-loss, spread, and optional broker limits."""
     if balance <= 0 or risk_percent <= 0 or risk_distance <= 0 or size <= 0:
-        return RiskCheck(False, "Invalid account, risk, distance, or size", 0.0, 0.0)
+        return RiskCheck(
+            False, "Invalid account, risk, distance, or size", 0.0, 0.0
+        )
     if max_daily_loss <= 0:
-        return RiskCheck(False, "Daily loss limit is not configured", 0.0, 0.0)
+        return RiskCheck(
+            False, "Daily loss limit is not configured", 0.0, 0.0
+        )
     if daily_pnl <= -max_daily_loss:
-        return RiskCheck(False, "Daily loss limit reached", 0.0, max_daily_loss)
+        return RiskCheck(
+            False, "Daily loss limit reached", 0.0, max_daily_loss
+        )
     if (
         spread_points is not None
         and max_spread_points is not None
         and spread_points > max_spread_points
     ):
-        return RiskCheck(False, "Spread exceeds risk limit", 0.0, max_daily_loss)
+        return RiskCheck(
+            False, "Spread exceeds risk limit", 0.0, max_daily_loss
+        )
 
     if tick_size is not None and tick_value is not None:
         if tick_size <= 0 or tick_value <= 0:
-            return RiskCheck(False, "Invalid broker tick economics", 0.0, max_daily_loss)
+            return RiskCheck(
+                False, "Invalid broker tick economics", 0.0, max_daily_loss
+            )
         risk_cash = risk_distance / tick_size * tick_value * size
     else:
         risk_cash = risk_distance * size
 
     configured_risk_cash = balance * risk_percent / 100.0
     if risk_cash > configured_risk_cash + 1e-9:
-        return RiskCheck(False, "Position exceeds configured risk", risk_cash, max_daily_loss)
+        return RiskCheck(
+            False, "Position exceeds configured risk",
+            risk_cash, max_daily_loss
+        )
     remaining_daily_loss = max_daily_loss + min(daily_pnl, 0.0)
     if risk_cash > remaining_daily_loss + 1e-9:
-        return RiskCheck(False, "Trade risk exceeds remaining daily loss", risk_cash, max_daily_loss)
+        return RiskCheck(
+            False, "Trade risk exceeds remaining daily loss",
+            risk_cash, max_daily_loss
+        )
     return RiskCheck(True, "Risk checks passed", risk_cash, max_daily_loss)

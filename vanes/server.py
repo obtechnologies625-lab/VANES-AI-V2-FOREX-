@@ -8,19 +8,23 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 class _Handler(BaseHTTPRequestHandler):
     """Serve the latest VANES state to MetaTrader 5."""
 
-    server_version = "VANES/0.1"
+    server_version = "VANES/0.2"
 
     def do_GET(self):  # pylint: disable=invalid-name
-        """Return the current VANES state for /state requests."""
-        if self.path != "/state":
+        """Return state or health for local bridge requests."""
+        if self.path == "/health":
+            payload = b'{"status":"ok","service":"vanes-bridge"}'
+        elif self.path == "/state":
+            payload = json.dumps(
+                self.server.state, separators=(",", ":")
+            ).encode()
+        else:
             self.send_response(404)
             self.end_headers()
             return
-        payload = json.dumps(
-            self.server.state, separators=(",", ":")
-        ).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Cache-Control", "no-store")
         self.send_header("Content-Length", str(len(payload)))
         self.end_headers()
         self.wfile.write(payload)
@@ -45,6 +49,9 @@ class LocalBridge:
             "reason": "Starting VANES",
             "stop_loss": 0.0,
             "take_profit": 0.0,
+            "paper_balance": 0.0,
+            "paper_daily_pnl": 0.0,
+            "paper_open_trades": 0,
         }
         self.thread = threading.Thread(
             target=self.server.serve_forever, daemon=True

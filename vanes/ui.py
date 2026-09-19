@@ -80,7 +80,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         ).pack(side="bottom", pady=8)
         self.root.after(100, self.refresh)
 
-    def refresh(self):
+    def refresh(self):  # pylint: disable=too-many-locals
         """Refresh quotes, analysis, risk reference, and bridge state."""
         snapshot = self.adapter.snapshot(self.config.symbol)
         candles = self.adapter.candles(

@@ -10,10 +10,10 @@ import ctypes
 import os
 
 
-@dataclass(frozen=True)
 # pylint: disable=too-few-public-methods
 
 
+@dataclass(frozen=True)
 class ScreenContext:
     """Describe the visible desktop context available to VANES."""
 
@@ -34,7 +34,11 @@ class ScreenContext:
             return (
                 "Desktop visible; active window title unavailable."
             )
-        activity = "activity detected" if self.mouse_active or self.keyboard_active else "no recent input"
+        activity = (
+            "activity detected"
+            if self.mouse_active or self.keyboard_active
+            else "no recent input"
+        )
         return (
             f"{self.window_title} • {activity}"
         )

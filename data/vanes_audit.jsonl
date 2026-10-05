@@ -1,0 +1,4 @@
+{"timestamp":"2026-09-19T03:53:41.599807+00:00","event":"platform_status","connected":false,"message":"MetaTrader 5 initialize() failed: (-10003, 'IPC initialize failed, MetaTrader 5 x64 not found')"}
+{"timestamp":"2026-09-19T03:53:41.856403+00:00","event":"guidance","symbol":"EURUSD","direction":"WAIT","confidence":0.0,"reason":"Collecting candle history"}
+{"timestamp":"2026-09-19T03:54:34.294228+00:00","event":"platform_status","connected":false,"message":"MetaTrader 5 initialize() failed: (-10003, 'IPC initialize failed, MetaTrader 5 x64 not found')"}
+{"timestamp":"2026-09-19T03:54:34.458852+00:00","event":"guidance","symbol":"EURUSD","direction":"WAIT","confidence":0.0,"reason":"Collecting candle history"}

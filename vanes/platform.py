@@ -1,7 +1,10 @@
-"""Trading-platform adapters for read-only market data."""
+"""Trading-platform adapters for read-only market data and live orders."""
+
+from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Any
 
 from .market import Candle, Tick
 from .signals import MarketSnapshot
@@ -196,3 +199,95 @@ class MT5Adapter(PlatformAdapter):
         if self._mt5 is not None:
             self._mt5.shutdown()
             self._mt5 = None
+
+    def place_market_order(
+        self,
+        symbol: str,
+        direction: str,
+        volume: float,
+        sl: float = 0.0,
+        tp: float = 0.0,
+        comment: str = "VANES-AI SERVER_A",
+    ) -> dict[str, Any]:
+        """Place a live market order for SERVER_A tier."""
+        if self._mt5 is None or not self._select(symbol):
+            return {"success": False, "message": "Not connected or symbol unavailable"}
+        tick = self._mt5.symbol_info_tick(symbol)
+        if tick is None or tick.bid <= 0 or tick.ask <= 0:
+            return {"success": False, "message": "No live tick"}
+        order_type = (
+            self._mt5.ORDER_TYPE_BUY
+            if direction.upper() == "BUY"
+            else self._mt5.ORDER_TYPE_SELL
+        )
+        price = float(tick.ask if direction.upper() == "BUY" else tick.bid)
+        request = {
+            "action": self._mt5.TRADE_ACTION_DEAL,
+            "symbol": symbol,
+            "volume": float(volume),
+            "type": order_type,
+            "price": price,
+            "sl": float(sl),
+            "tp": float(tp),
+            "deviation": 10,
+            "magic": 314159,
+            "comment": comment,
+            "type_time": self._mt5.ORDER_TIME_GTC,
+            "type_filling": self._mt5.ORDER_FILLING_FOK,
+        }
+        result = self._mt5.order_send(request)
+        if result is None or result.retcode != self._mt5.TRADE_RETCODE_DONE:
+            msg = result.comment if result else "order_send returned None"
+            return {"success": False, "message": f"Order failed: {msg}"}
+        return {
+            "success": True,
+            "ticket": int(result.order),
+            "symbol": symbol,
+            "direction": direction,
+            "volume": float(volume),
+            "price": float(result.price),
+            "sl": float(sl),
+            "tp": float(tp),
+            "message": "Order placed",
+        }
+
+    def close_position_by_ticket(self, ticket: int) -> dict[str, Any]:
+        """Close an open position by ticket."""
+        if self._mt5 is None:
+            return {"success": False, "message": "Not connected"}
+        positions = self._mt5.positions_get()
+        if positions is None:
+            return {"success": False, "message": "No positions"}
+        target = None
+        for pos in positions:
+            if int(pos.ticket) == ticket:
+                target = pos
+                break
+        if target is None:
+            return {"success": False, "message": f"Ticket {ticket} not found"}
+        tick = self._mt5.symbol_info_tick(target.symbol)
+        if tick is None or tick.bid <= 0 or tick.ask <= 0:
+            return {"success": False, "message": "No live tick"}
+        close_price = float(tick.bid if target.type == self._mt5.ORDER_TYPE_BUY else tick.ask)
+        request = {
+            "action": self._mt5.TRADE_ACTION_DEAL,
+            "symbol": target.symbol,
+            "volume": float(target.volume),
+            "type": (
+                self._mt5.ORDER_TYPE_SELL
+                if target.type == self._mt5.ORDER_TYPE_BUY
+                else self._mt5.ORDER_TYPE_BUY
+            ),
+            "position": ticket,
+            "price": close_price,
+            "deviation": 10,
+            "magic": 314159,
+            "comment": "VANES-AI SERVER_A close",
+            "type_time": self._mt5.ORDER_TIME_GTC,
+            "type_filling": self._mt5.ORDER_FILLING_FOK,
+        }
+        result = self._mt5.order_send(request)
+        if result is None or result.retcode != self._mt5.TRADE_RETCODE_DONE:
+            msg = result.comment if result else "order_send returned None"
+            return {"success": False, "message": f"Close failed: {msg}"}
+        return {"success": True, "ticket": ticket, "message": "Position closed"}

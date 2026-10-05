@@ -6,7 +6,7 @@ import os
 
 @dataclass
 class AppConfig:  # pylint: disable=too-many-instance-attributes
-    """Configure VANES market analysis, risk, and observer behavior."""
+    """Configure VANES market analysis, risk, capture, and cloud behavior."""
 
     refresh_ms: int = 1500
     overlay_width: int = 430
@@ -28,6 +28,22 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
     paper_max_open_trades: int = 1
     paper_start_balance: float = 10000.0
     audit_path: str = "data/vanes_audit.jsonl"
+
+    cloud_url: str = ""
+    cloud_token: str = ""
+    cloud_publish_interval: float = 3.0
+    cloud_timeout: float = 5.0
+    subscription_tier: str = "SERVER_B"
+    jwt_secret: str = ""
+    gemini_api_key: str = ""
+
+    capture_audio_enabled: bool = False
+    capture_screen_enabled: bool = False
+    capture_audio_device: str = ""
+    capture_screen_region: str = ""
+    capture_audio_chunk_seconds: float = 2.0
+    capture_screen_fps: int = 1
+    capture_max_packet_bytes: int = 524288
 
     @classmethod
     def from_environment(cls) -> "AppConfig":
@@ -61,5 +77,31 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
             ),
             audit_path=os.getenv(
                 "VANES_AUDIT_PATH", "data/vanes_audit.jsonl"
+            ),
+            cloud_url=os.getenv("VANES_CLOUD_URL", ""),
+            cloud_token=os.getenv("VANES_CLOUD_TOKEN", ""),
+            cloud_publish_interval=number(
+                "VANES_CLOUD_PUBLISH_INTERVAL", 3.0, float
+            ),
+            cloud_timeout=number("VANES_CLOUD_TIMEOUT", 5.0, float),
+            subscription_tier=os.getenv("VANES_SUBSCRIPTION_TIER", "SERVER_B"),
+            jwt_secret=os.getenv("VANES_JWT_SECRET", ""),
+            gemini_api_key=os.getenv("VANES_GEMINI_API_KEY", ""),
+            capture_audio_enabled=os.getenv(
+                "VANES_CAPTURE_AUDIO", "0"
+            ) == "1",
+            capture_screen_enabled=os.getenv(
+                "VANES_CAPTURE_SCREEN", "0"
+            ) == "1",
+            capture_audio_device=os.getenv("VANES_CAPTURE_AUDIO_DEVICE", ""),
+            capture_screen_region=os.getenv(
+                "VANES_CAPTURE_SCREEN_REGION", ""
+            ),
+            capture_audio_chunk_seconds=number(
+                "VANES_CAPTURE_AUDIO_CHUNK_SECONDS", 2.0, float
+            ),
+            capture_screen_fps=number("VANES_CAPTURE_SCREEN_FPS", 1, int),
+            capture_max_packet_bytes=number(
+                "VANES_CAPTURE_MAX_PACKET_BYTES", 524288, int
             ),
         )

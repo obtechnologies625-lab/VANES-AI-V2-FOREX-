@@ -2,6 +2,9 @@ name = "vanes-ai-v2-forex"
 main = "src/index.js"
 compatibility_date = "2026-09-19"
 
+[vars]
+VANES_PAYWALL = "0"
+
 [observability]
 enabled = false
 head_sampling_rate = 1

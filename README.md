@@ -1,8 +1,12 @@
 # VANES-AI V2 FOREX
 
-> **Realtime Forex Intelligence Command Center** — market data, transparent signals, broker-aware risk references, paper trading, historical replay, MT5 bridge, and a local chatbot in one project.
+<p align="center">
+  <img src="./icon.svg" alt="VANES AI Logo" width="400">
+</p>
 
-VANES-AI V2 is a read-only market-analysis and paper-trading observer for MetaTrader 5. It displays transparent technical guidance and never submits broker orders.
+> **Realtime Forex Intelligence Command Center** — market data, transparent signals, broker-aware risk references, paper trading, historical replay, MT5 bridge, local chatbot, multimodal cloud AI, and secure live-order dispatch for SERVER_A subscribers.
+
+VANES-AI V2 is a market-analysis and paper-trading observer for MetaTrader 5. It can optionally capture microphone audio and MT5 screen frames, aggregate them into secure packets, and send them to a Cloudflare-backed AI gateway for multimodal analysis. SERVER_A tier subscribers receive live order dispatch instructions that can be executed via the MT5 Python API.
 
 ## Realtime command center
 
@@ -117,23 +121,139 @@ GitHub Actions runs syntax checks, unit tests and Pylint on Python 3.10, 3.11 an
 
 ## Architecture
 
-    MetaTrader 5
-         |
-         +-- MQL5 chart observer
-         |
-         +-- Python read-only adapter
-                    |
-                    v
-             VANES analysis core
-              +-- indicators
-              +-- structure
-              +-- strategy
-              +-- risk
-              +-- paper simulation
-              +-- audit
-                    |
-                    v
-              desktop UI / JSON bridge
+    +-----------------------+      +-----------------------+      +-----------------------+
+    |  USER MICROPHONE FEED |      |   OS WINDOW MONITOR   |      |  LOCAL OVERLAY CLIENT |
+    |  "What's the status?" |      |  (MetaTrader 5 Screen)|      |  (PyQt6 / Electron UI)|
+    +-----------+-----------+      +-----------+-----------+      +-----------+-----------+
+                |                              |                              |
+                v                              v                              |
+      [Audio Capture Buffer]         [Screen Capture Frame]                   |
+                |                              |                              |
+                +---------------+--------------+                              |
+                                |                                             |
+                                v                                             |
+                  +───────────────────────────+                               |
+                  | Local Client Aggregator   |                               |
+                  | Packets Encapsulation     |                               |
+                  +─────────────+─────────────+                               |
+                                |                                             |
+                                |  HTTPS POST (With User Account JWT Token)   |
+                                v                                             |
+                  +───────────────────────────+                               |
+                  | Cloud API Edge Gateway    |                               |
+                  | (Token Check & Paywall)   |                               |
+                  +─────────────+─────────────+                               |
+                                |                                             |
+                ┌─────────────────┴─────────────────┐                           |
+                ▼                                   ▼                           |
+      [Token Rejected: 402/401]          [Token Verified: Valid User]          |
+                │                                   │                           |
+                ▼                                   v                           |
+      (Return Error JSON)             +───────────────────────+               |
+                │                       | Server Tier Router    |               |
+                │                       | (A, B, or C Ruleset)  |               |
+                │                       +───────────+───────────+               |
+                │                                   |                           |
+                │                                   v                           |
+                │                       +───────────────────────+               |
+                │                       | Gemini 2.5 MultiModal |               |
+                │                       | (Image + Text Logic)  |               |
+                │                       +───────────+───────────+               |
+                │                                   |                           |
+                │                                   v                           |
+                │                       +───────────────────────+               |
+                │                       | Formatted JSON Return |               |
+                │                       +───────────+───────────+               |
+                │                                   |                           |
+                v                                   v                           |
+    +─────────────────────────────────────────────────────────────────────────+-----------+
+    |                          SECURE INTER-PROCESS CLIENT PIPELINE                       |
+    +─────────────────────────────────────────────────────────────────────────+-----------+
+                  │                                   │
+                  ▼                                   ▼
+    [Display Red Error Banner]         [Render Transparent Alert Text Notification Overlay]
+                                                  │
+                                                  ▼
+                                     { IF SUBSCRIPTION TIER == "SERVER_A" }
+                                                  │
+                                                  ▼
+                                     +─────────────────────────+
+                                     | MetaTrader 5 Python API |
+                                     |  (Live Order Dispatched)|
+                                     +─────────────────────────+
+
+- **Local capture** (`vanes/capture.py`) captures microphone audio and MT5 screen frames when enabled via `VANES_CAPTURE_AUDIO=1` and `VANES_CAPTURE_SCREEN=1`.
+- **Aggregator** (`vanes/aggregator.py`) encapsulates audio, screen, and market state into compact packets.
+- **Secure client** (`vanes/jwt_client.py`) authenticates with short-lived JWTs and sends packets to the Cloud API Edge Gateway.
+- **Cloudflare Worker** (`cloudflare/src/index.js`) verifies JWT tokens, enforces subscription tiers, and routes requests.
+- **Gemini 2.5** multimodal analysis runs server-side for SERVER_A and SERVER_B tiers.
+- **Overlay UI** (`vanes/ui.py`) shows live analysis, error banners, and transparent alert notifications.
+- **Live trader** (`vanes/trader.py`) dispatches MT5 orders only for SERVER_A tier with explicit user consent.
+
+## Multimodal pipeline
+
+When enabled, VANES captures two local streams:
+
+1. **Microphone audio** — captured in 2-second chunks at 16 kHz mono PCM, base64-encoded into packets.
+2. **MT5 screen frames** — captured at 1 FPS by default, optimized to JPEG if the PNG exceeds the packet size limit.
+
+Both streams are aggregated with the latest market state and sent to the Cloud API Edge Gateway over HTTPS with a JWT bearer token.
+
+## Subscription tiers
+
+| Tier | Multimodal | AI Analysis | Live Orders |
+|------|-----------|-------------|-------------|
+| SERVER_A | Full audio + screen | Gemini 2.5 | Yes (MT5) |
+| SERVER_B | Full audio + screen | Gemini 2.5 | No |
+| SERVER_C | Text only | Basic rules | No |
+
+Set the tier with:
+
+    VANES_SUBSCRIPTION_TIER=SERVER_A
+
+## Secure inter-process pipeline
+
+- **JWT authentication** — every cloud request carries a short-lived HMAC-SHA256 JWT signed with `VANES_JWT_SECRET`.
+- **Token verification** — the Cloudflare Worker rejects expired or invalid tokens with HTTP 401.
+- **Paywall enforcement** — when `VANES_PAYWALL=1`, SERVER_A requests return HTTP 402 until payment is confirmed.
+- **Error banners** — the desktop overlay shows red error banners for 401/402/network failures.
+- **Transparent alerts** — success notifications and AI analysis summaries appear as transient overlay text.
+
+## Cloud configuration
+
+To enable the multimodal pipeline, set these environment variables:
+
+    VANES_CLOUD_URL=https://your-worker.workers.dev
+    VANES_CLOUD_TOKEN=your-publish-token
+    VANES_JWT_SECRET=your-jwt-secret
+    VANES_SUBSCRIPTION_TIER=SERVER_B
+    VANES_GEMINI_API_KEY=your-gemini-key
+
+Optional capture settings:
+
+    VANES_CAPTURE_AUDIO=1
+    VANES_CAPTURE_SCREEN=1
+    VANES_CAPTURE_AUDIO_DEVICE=default
+    VANES_CAPTURE_SCREEN_REGION=0,0,1920,1080
+    VANES_CAPTURE_AUDIO_CHUNK_SECONDS=2.0
+    VANES_CAPTURE_SCREEN_FPS=1
+    VANES_CAPTURE_MAX_PACKET_BYTES=524288
+
+## Live MT5 orders (SERVER_A only)
+
+When `VANES_SUBSCRIPTION_TIER=SERVER_A` and the cloud gateway returns `order_dispatch=READY`, the local `MT5Trader` can place and close live positions. This requires:
+
+1. MetaTrader 5 running with automated trading enabled.
+2. The Python `MetaTrader5` package installed.
+3. `VANES_DRY_RUN=0` (orders are placed only when dry run is disabled).
+
+Order flow:
+- Cloud Gemini analysis returns `direction`, `confidence`, `reason`.
+- The local client evaluates risk gates and symbol specs.
+- `MT5Trader.place_order()` sends a market order with SL/TP to the broker.
+- Positions are tracked and can be closed via `close_position_by_ticket()`.
+
+**Safety boundary:** Live orders are only dispatched for SERVER_A tier and only after explicit configuration. The default remains `VANES_DRY_RUN=1` (no orders).
 
 ## Safety boundary
 

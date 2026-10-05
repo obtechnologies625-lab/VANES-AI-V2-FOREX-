@@ -1,10 +1,13 @@
 """Desktop observer UI for VANES-AI V2."""
 
+import os
 import tkinter as tk
+
+from PIL import Image, ImageTk
 
 from .alerts import AlertEngine
 from .audit import AuditLogger
-from .cloud import CloudStatePublisher
+from .cloud import CloudStatePublisher, CloudPublishResult
 from .config import AppConfig
 from .market import atr
 from .paper import PaperTrader
@@ -15,7 +18,7 @@ from .strategy import RuleBasedStrategy
 
 
 class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments
-    """Display live VANES analysis without executing broker orders."""
+    """Display live VANES analysis, secure pipeline status, and tier-based alerts."""
 
     def __init__(
         self,
@@ -26,6 +29,11 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         audit: AuditLogger | None = None,
         paper: PaperTrader | None = None,
         cloud_publisher: CloudStatePublisher | None = None,
+        secure_client=None,
+        audio_capture=None,
+        screen_capture=None,
+        aggregator=None,
+        trader=None,
     ):
         """Create the always-on-top observer window."""
         self.config = config
@@ -35,15 +43,23 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.audit = audit
         self.paper = paper
         self.cloud_publisher = cloud_publisher
+        self.secure_client = secure_client
+        self.audio_capture = audio_capture
+        self.screen_capture = screen_capture
+        self.aggregator = aggregator
+        self.trader = trader
         self.last_signal = None
         self.alerts = AlertEngine()
         self.screen_observer = ScreenObserver()
+        self._alert_queue: list[str] = []
+        self._last_cloud_error = ""
 
         self.root = tk.Tk()
         self.root.title("VANES-AI V2 • FOREX")
         self.root.geometry(f"{config.overlay_width}x{config.overlay_height}")
         self.root.resizable(False, False)
         self.root.attributes("-topmost", config.always_on_top)
+        self._set_window_icon()
 
         tk.Label(
             self.root, text="VANES-AI V2 • FOREX",
@@ -90,6 +106,33 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             wraplength=390, justify="center"
         )
         self.next_step.pack(pady=2)
+        self.tier_label = tk.Label(
+            self.root,
+            text=f"TIER: {config.subscription_tier}",
+            font=("Segoe UI", 8),
+        )
+        self.tier_label.pack(pady=2)
+        self.error_banner = tk.Label(
+            self.root,
+            text="",
+            bg="#2b1218",
+            fg="#ffb3b8",
+            wraplength=390,
+            justify="center",
+        )
+        self.error_banner.pack(pady=2)
+        self.cloud_status = tk.Label(
+            self.root,
+            text="Cloud: disabled",
+            font=("Segoe UI", 8),
+        )
+        self.cloud_status.pack(pady=2)
+        self.trader_status = tk.Label(
+            self.root,
+            text="Trader: inactive",
+            font=("Segoe UI", 8),
+        )
+        self.trader_status.pack(pady=2)
         tk.Label(
             self.root,
             text="OBSERVING • PAPER ONLY • NO BROKER ORDERS",
@@ -97,8 +140,61 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         ).pack(side="bottom", pady=8)
         self.root.after(100, self.refresh)
 
+    def _set_window_icon(self) -> None:
+        """Set the window icon from the project logo if available."""
+        try:
+            icon_path = os.path.join(
+                os.path.dirname(__file__), "..", "icon.svg"
+            )
+            image = Image.open(icon_path)
+            icon = ImageTk.PhotoImage(image)
+            self.root.iconphoto(True, icon)
+            self._icon_image = icon
+        except (OSError, ImportError, Exception):
+            pass
+
+    def _show_error_banner(self, message: str) -> None:
+        """Display a red error banner in the overlay."""
+        self.error_banner.config(text=f"ERROR: {message}" if message else "")
+        if message:
+            self.root.after(5000, lambda: self.error_banner.config(text=""))
+
+    def _show_alert(self, message: str) -> None:
+        """Queue a transparent alert text notification."""
+        self._alert_queue.append(message)
+        if len(self._alert_queue) > 3:
+            self._alert_queue.pop(0)
+        self._render_alerts()
+
+    def _render_alerts(self) -> None:
+        """Render queued alerts as transparent overlay text."""
+        text = " | ".join(self._alert_queue)
+        if text:
+            self.root.title(f"ALERT: {text}")
+        else:
+            self.root.title("VANES-AI V2 • FOREX")
+
+    def _update_trader_status(self) -> None:
+        """Update the trader status label."""
+        if self.trader is None:
+            self.trader_status.config(text="Trader: inactive")
+        elif self.config.subscription_tier == "SERVER_A":
+            self.trader_status.config(text="Trader: SERVER_A LIVE")
+        else:
+            self.trader_status.config(text="Trader: tier locked")
+
     def refresh(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         """Refresh quotes, analysis, risk reference, and bridge state."""
+        audio_chunks = []
+        screen_frames = []
+        if self.audio_capture:
+            chunk = self.audio_capture.capture()
+            if chunk:
+                audio_chunks.append(chunk)
+        if self.screen_capture:
+            frame = self.screen_capture.capture()
+            if frame:
+                screen_frames.append(frame)
         screen = self.screen_observer.observe()
         snapshot = self.adapter.snapshot(self.config.symbol)
         candles = self.adapter.candles(
@@ -303,7 +399,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 suggested_next_step=next_step(screen, guidance.direction.value),
             )
         if self.cloud_publisher:
-            self.cloud_publisher.publish({
+            state_payload = {
                 "symbol": self.config.symbol,
                 "direction": guidance.direction.value,
                 "confidence": guidance.confidence,
@@ -340,7 +436,72 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 "broker_ready": spec is not None,
                 "risk_gate": risk_gate,
                 "point_size": point_size,
-            })
+                "audio_chunks": audio_chunks,
+                "screen_frames": screen_frames,
+            }
+            result = self.cloud_publisher.publish(state_payload)
+            if isinstance(result, CloudPublishResult):
+                if result.ok:
+                    self.cloud_status.config(
+                        text=f"Cloud: connected • tier {self.config.subscription_tier}"
+                    )
+                    if result.analysis:
+                        self._show_alert(f"AI: {result.analysis[:120]}")
+                else:
+                    self.cloud_status.config(text=f"Cloud: {result.error[:40]}")
+                    if result.error and result.error != "throttled":
+                        self._show_error_banner(result.error[:80])
+            else:
+                self.cloud_status.config(text="Cloud: published")
+
+        if self.secure_client and self.aggregator:
+            packet_state = {
+                "symbol": self.config.symbol,
+                "direction": guidance.direction.value,
+                "confidence": guidance.confidence,
+                "bid": snapshot.bid or 0.0,
+                "ask": snapshot.ask or 0.0,
+                "spread": snapshot.spread or 0.0,
+                "reason": guidance.reason,
+                "stop_loss": stop_loss,
+                "take_profit": take_profit,
+                "risk_gate": risk_gate,
+                "broker_ready": spec is not None,
+                "paper_balance": self.paper.balance if self.paper else 0.0,
+                "paper_daily_pnl": self.paper.daily_pnl if self.paper else 0.0,
+                "paper_open_trades": (
+                    sum(1 for trade in self.paper.trades
+                        if trade.closed_at is None)
+                    if self.paper else 0
+                ),
+                "point_size": point_size,
+                "updated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+                "audio_chunks": audio_chunks,
+                "screen_frames": screen_frames,
+            }
+            packet = self.aggregator.build_packet(packet_state)
+            if packet:
+                response = self.secure_client.send_packet(packet)
+                if response.ok:
+                    self.cloud_status.config(
+                        text=f"Cloud: analyzed • tier {self.config.subscription_tier}"
+                    )
+                    if response.data.get("analysis"):
+                        self._show_alert(f"AI: {response.data['analysis'][:120]}")
+                    if response.data.get("order_dispatch") == "READY":
+                        self._show_alert("SERVER_A: Order dispatch ready")
+                else:
+                    self.cloud_status.config(text=f"Cloud: {response.error[:40]}")
+                    if response.status == 402:
+                        self._show_error_banner("PAYWALL: Subscription required")
+                    elif response.error:
+                        self._show_error_banner(response.error[:80])
+
+        self._update_trader_status()
+        if self.trader and self.config.subscription_tier == "SERVER_A":
+            positions = self.trader.sync_positions()
+            if positions:
+                self._show_alert(f"Positions: {len(positions)} open")
 
         self.root.after(self.config.refresh_ms, self.refresh)
 

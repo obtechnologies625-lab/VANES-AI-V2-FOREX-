@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 
@@ -123,7 +122,7 @@ class ScreenCapture:
             return
         try:
             from PIL import ImageGrab  # pylint: disable=import-outside-toplevel
-            self._image_grab = ImageGrab
+            self._image_grab = ImageGrab  # pylint: disable=attribute-defined-outside-init
             self._running = True
         except ImportError:
             self._running = False

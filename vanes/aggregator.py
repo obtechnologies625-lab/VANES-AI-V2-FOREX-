@@ -8,8 +8,8 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-@dataclass  # pylint: disable=too-many-instance-attributes
-class TelemetryPacket:
+@dataclass
+class TelemetryPacket:  # pylint: disable=too-many-instance-attributes
     """One encapsulated multimodal packet with metadata."""
 
     packet_id: str

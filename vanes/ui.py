@@ -1,5 +1,6 @@
 """Desktop observer UI for VANES-AI V2."""
 
+import datetime
 import os
 import tkinter as tk
 
@@ -143,7 +144,6 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
     def _set_window_icon(self) -> None:
         """Set the window icon from the project logo if available."""
         try:
-            import datetime as _dt
             icon_path = os.path.join(
                 os.path.dirname(__file__), "..", "icon.svg"
             )

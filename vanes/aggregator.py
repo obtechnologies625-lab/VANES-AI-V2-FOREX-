@@ -1,4 +1,4 @@
-"""Packet encapsulation and aggregation for multimodal VANES telemetry."""
+"""Packet encapsulation and aggregation for multimodal VANES telemetry."""  # pylint: disable=duplicate-code
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 
-@dataclass
+@dataclass  # pylint: disable=too-many-instance-attributes
 class TelemetryPacket:
     """One encapsulated multimodal packet with metadata."""
 
@@ -73,7 +73,7 @@ class TelemetryPacket:
         return base
 
 
-class PacketAggregator:
+class PacketAggregator:  # pylint: disable=too-few-public-methods
     """Aggregate market state with optional capture media into packets."""
 
     def __init__(

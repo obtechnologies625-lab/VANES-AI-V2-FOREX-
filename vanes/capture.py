@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import BinaryIO
+from typing import Any
 
 import numpy as np
 
@@ -40,6 +40,8 @@ class AudioCapture:
         self.chunk_seconds = max(0.5, float(chunk_seconds))
         self._stream = None
         self._running = False
+        self._sample_rate = 16000
+        self._channels = 1
 
     def start(self) -> None:
         """Start audio capture if the audio stack is available."""
@@ -121,7 +123,7 @@ class ScreenCapture:
             return
         try:
             from PIL import ImageGrab  # pylint: disable=import-outside-toplevel
-            self._ImageGrab = ImageGrab
+            self._image_grab = ImageGrab
             self._running = True
         except ImportError:
             self._running = False
@@ -148,9 +150,9 @@ class ScreenCapture:
         self._last_capture = now
         try:
             bbox = self._parse_region()
-            image = self._ImageGrab.grab(bbox=bbox)
+            image = self._image_grab.grab(bbox=bbox)
             img_format = "PNG"
-            from io import BytesIO
+            from io import BytesIO  # pylint: disable=import-outside-toplevel
             buffer = BytesIO()
             image.save(buffer, format=img_format, optimize=True)
             raw = buffer.getvalue()

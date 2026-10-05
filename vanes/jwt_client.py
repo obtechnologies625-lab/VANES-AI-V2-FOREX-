@@ -2,13 +2,9 @@
 
 from __future__ import annotations
 
-import hashlib
-import hmac
 import json
-import os
 import time
 from dataclasses import dataclass
-from datetime import datetime, timezone
 from typing import Any
 from urllib.error import URLError
 from urllib.request import Request, urlopen
@@ -26,7 +22,7 @@ class CloudResponse:
     error: str = ""
 
 
-class SecureCloudClient:
+class SecureCloudClient:  # pylint: disable=too-few-public-methods
     """Authenticate with JWT and send multimodal packets to the Cloud API Edge Gateway."""
 
     def __init__(

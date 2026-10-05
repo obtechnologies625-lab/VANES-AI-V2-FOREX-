@@ -200,7 +200,7 @@ class MT5Adapter(PlatformAdapter):
             self._mt5.shutdown()
             self._mt5 = None
 
-    def place_market_order(
+    def place_market_order(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         symbol: str,
         direction: str,

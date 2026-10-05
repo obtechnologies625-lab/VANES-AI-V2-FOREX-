@@ -17,7 +17,7 @@ from .screen import ScreenObserver, next_step
 from .strategy import RuleBasedStrategy
 
 
-class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments
+class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments,too-many-statements
     """Display live VANES analysis, secure pipeline status, and tier-based alerts."""
 
     def __init__(
@@ -143,6 +143,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
     def _set_window_icon(self) -> None:
         """Set the window icon from the project logo if available."""
         try:
+            import datetime as _dt
             icon_path = os.path.join(
                 os.path.dirname(__file__), "..", "icon.svg"
             )
@@ -150,7 +151,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             icon = ImageTk.PhotoImage(image)
             self.root.iconphoto(True, icon)
             self._icon_image = icon
-        except (OSError, ImportError, Exception):
+        except (OSError, ImportError):
             pass
 
     def _show_error_banner(self, message: str) -> None:
@@ -475,7 +476,9 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                     if self.paper else 0
                 ),
                 "point_size": point_size,
-                "updated_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat(),
+                "updated_at": __import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc
+                ).isoformat(),
                 "audio_chunks": audio_chunks,
                 "screen_frames": screen_frames,
             }

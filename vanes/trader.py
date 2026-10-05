@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 
 @dataclass(frozen=True)
-class OrderResult:
+class OrderResult:  # pylint: disable=too-many-instance-attributes  # pylint: disable=too-many-instance-attributes
     """Outcome of a single order attempt."""
 
     success: bool
@@ -23,7 +23,7 @@ class OrderResult:
 
 
 @dataclass
-class ActivePosition:
+class ActivePosition:  # pylint: disable=too-many-instance-attributes  # pylint: disable=too-many-instance-attributes
     """Track an open SERVER_A position."""
 
     ticket: int
@@ -64,7 +64,7 @@ class MT5Trader:
         """Return the most recent error message."""
         return self._last_error
 
-    def place_order(
+    def place_order(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         symbol: str,
         direction: str,
@@ -150,8 +150,12 @@ class MT5Trader:
         tick = self._mt5.symbol_info_tick(position.symbol)
         if tick is None or tick.bid <= 0 or tick.ask <= 0:
             self._last_error = f"No live tick for {position.symbol}"
-            return OrderResult(False, ticket, position.symbol, "", 0.0, 0.0, 0.0, 0.0, self._last_error)
-        close_price = float(tick.bid if position.direction == self._mt5.ORDER_TYPE_BUY else tick.ask)
+            return OrderResult(
+                False, ticket, position.symbol, "", 0.0, 0.0, 0.0, 0.0, self._last_error
+            )
+        close_price = float(
+            tick.bid if position.direction == self._mt5.ORDER_TYPE_BUY else tick.ask
+        )
         request = {
             "action": self._mt5.TRADE_ACTION_DEAL,
             "symbol": position.symbol,
@@ -173,7 +177,10 @@ class MT5Trader:
         if result is None or result.retcode != self._mt5.TRADE_RETCODE_DONE:
             msg = result.comment if result else "order_send returned None"
             self._last_error = f"Close failed: {msg}"
-            return OrderResult(False, ticket, position.symbol, "", position.volume, close_price, 0.0, 0.0, self._last_error)
+            return OrderResult(
+                False, ticket, position.symbol, "", position.volume,
+                close_price, 0.0, 0.0, self._last_error
+            )
         self._positions.pop(ticket, None)
         self._last_error = ""
         return OrderResult(

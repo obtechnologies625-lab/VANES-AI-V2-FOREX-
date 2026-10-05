@@ -7,19 +7,19 @@ media (audio chunks and screen frames) to the Cloud API Edge Gateway.
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import time
 from dataclasses import dataclass
+from typing import Any
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-from .aggregator import PacketAggregator, TelemetryPacket
+from .aggregator import PacketAggregator
 
 
 @dataclass
-class CloudPublishResult:
+class CloudPublishResult:  # pylint: disable=too-many-instance-attributes
     """Result of a cloud publish attempt."""
 
     ok: bool
@@ -36,7 +36,7 @@ class CloudPublishResult:
             self.sources = []
 
 
-class CloudStatePublisher:
+class CloudStatePublisher:  # pylint: disable=too-many-instance-attributes
     """Publish sanitized VANES state and multimodal media to a Cloudflare Worker."""
 
     FIELDS = (
@@ -59,7 +59,7 @@ class CloudStatePublisher:
         "point_size",
     )
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         url: str,
         token: str,
@@ -81,7 +81,9 @@ class CloudStatePublisher:
         self.last_error = ""
 
     @classmethod
-    def from_environment(cls, aggregator: PacketAggregator | None = None) -> "CloudStatePublisher | None":
+    def from_environment(
+        cls, aggregator: PacketAggregator | None = None
+    ) -> "CloudStatePublisher | None":
         """Create a publisher from environment variables, or return None."""
         url = os.getenv("VANES_CLOUD_URL", "").strip()
         token = os.getenv("VANES_CLOUD_TOKEN", "").strip()

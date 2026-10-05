@@ -18,9 +18,11 @@ class CloudPublisherTests(unittest.TestCase):
     def test_publishes_whitelisted_state(self, mock_urlopen):
         response = mock_urlopen.return_value.__enter__.return_value
         response.status = 200
+        response.read.return_value = b'{"ok":true,"updated_at":"2026-01-01T00:00:00Z"}'
         publisher = CloudStatePublisher(
             "https://example.workers.dev",
             "secret",
+            "jwt-secret",
             interval_seconds=0.5,
         )
         state = {
@@ -53,25 +55,29 @@ class CloudPublisherTests(unittest.TestCase):
             ],
             "broker_password": "must-not-send",
         }
-        self.assertTrue(publisher.publish(state))
-        request = mock_urlopen.call_args.args[0]
-        body = json.loads(request.data.decode("utf-8"))
-        self.assertNotIn("broker_password", body)
-        self.assertEqual(body["symbol"], "EURUSD")
-        self.assertEqual(body["paper_trades"][0]["direction"], "BUY")
-        self.assertEqual(
-            request.headers["Authorization"], "Bearer secret"
-        )
+        with patch.object(publisher, "_make_jwt", return_value="secret"):
+            result = publisher.publish(state)
+            self.assertTrue(result.ok)
+            request = mock_urlopen.call_args.args[0]
+            body = json.loads(request.data.decode("utf-8"))
+            self.assertNotIn("broker_password", body)
+            self.assertEqual(body["symbol"], "EURUSD")
+            self.assertEqual(body["paper_trades"][0]["direction"], "BUY")
+            self.assertEqual(
+                request.headers["Authorization"], "Bearer secret"
+            )
 
     @patch("vanes.cloud.urlopen", side_effect=OSError("offline"))
     def test_network_failure_is_non_fatal(self, _mock_urlopen):
         publisher = CloudStatePublisher(
             "https://example.workers.dev",
             "secret",
+            "jwt-secret",
             interval_seconds=0.5,
         )
-        self.assertFalse(publisher.publish({"symbol": "EURUSD"}))
-        self.assertIn("offline", publisher.last_error)
+        result = publisher.publish({"symbol": "EURUSD"})
+        self.assertFalse(result.ok)
+        self.assertIn("offline", result.error)
 
 
 if __name__ == "__main__":

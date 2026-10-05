@@ -86,20 +86,21 @@ const normalize = (s) => {
   };
 };
 
-const verifyJwt = (token, secret) => {
+const verifyJwt = async (token, secret) => {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
     const [headerB64, payloadB64, signatureB64] = parts;
     const data = `${headerB64}.${payloadB64}`;
-    const expectedSig = await crypto.subtle.importKey(
+    const key = await crypto.subtle.importKey(
       "raw",
       new TextEncoder().encode(secret),
       { name: "HMAC", hash: "SHA-256" },
       false,
       ["verify"]
-    ).then((key) =>
-      crypto.subtle.verify("HMAC", key, hexToUint8Array(signatureB64), new TextEncoder().encode(data))
+    );
+    const expectedSig = await crypto.subtle.verify(
+      "HMAC", key, hexToUint8Array(signatureB64), new TextEncoder().encode(data)
     );
     if (!expectedSig) return null;
     const payload = JSON.parse(atou(payloadB64));
@@ -382,7 +383,7 @@ export default {
       if (!secret) return json({ error: "JWT not configured" }, 500);
       if (!authHeader.startsWith("Bearer ")) return json({ error: "Missing token" }, 401);
       const token = authHeader.slice(7);
-      const payload = verifyJwt(token, secret);
+      const payload = await verifyJwt(token, secret);
       if (!payload) return json({ error: "Invalid or expired token" }, 401);
       if (payload.tier === "SERVER_A" && env.VANES_PAYWALL === "1") {
         return json({ error: "Payment required", paywall: true }, 402);

@@ -10,7 +10,9 @@ from .paper import PaperTrader
 from .platform import MT5Adapter
 from .risk import daily_loss_limit
 from .server import LocalBridge
+from .server_selector import ServerSelectionDialog
 from .strategy import RuleBasedStrategy, StrategyConfig
+from .subscription import SubscriptionManager
 from .trader import MT5Trader
 from .ui import Overlay
 
@@ -18,6 +20,13 @@ from .ui import Overlay
 def main():
     """Start the VANES desktop observer, local MT5 bridge, and multimodal pipeline."""
     config = AppConfig.from_environment()
+    subscription = SubscriptionManager(config)
+
+    allowed, reason = subscription.can_access()
+    if not allowed:
+        print(f"VANES: {reason}")
+        return
+
     adapter = MT5Adapter()
     bridge = LocalBridge()
     strategy = RuleBasedStrategy(
@@ -26,7 +35,7 @@ def main():
     audit = AuditLogger(config.audit_path)
 
     aggregator = PacketAggregator(
-        subscription_tier=config.subscription_tier,
+        subscription_tier=subscription.selected_tier,
         max_packet_bytes=config.capture_max_packet_bytes,
     )
     cloud_publisher = CloudStatePublisher.from_environment(aggregator=aggregator)
@@ -36,7 +45,7 @@ def main():
             url=config.cloud_url,
             token=config.cloud_token,
             jwt_secret=config.jwt_secret,
-            subscription_tier=config.subscription_tier,
+            subscription_tier=subscription.selected_tier,
             timeout=config.cloud_timeout,
         )
         print("VANES secure cloud client: enabled")
@@ -60,7 +69,7 @@ def main():
         screen_capture.start()
 
     trader = None
-    if config.subscription_tier == "SERVER_A":
+    if subscription.selected_tier == "SERVER_A":
         trader = MT5Trader(adapter)
         if trader.connect():
             print("VANES live trader: enabled (SERVER_A)")
@@ -101,6 +110,7 @@ def main():
             screen_capture=screen_capture,
             aggregator=aggregator,
             trader=trader,
+            subscription=subscription,
         ).run()
     finally:
         bridge.stop()

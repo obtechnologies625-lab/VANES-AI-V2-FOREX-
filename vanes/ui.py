@@ -14,7 +14,9 @@ from .paper import PaperTrader
 from .platform import PlatformAdapter
 from .risk import build_risk_plan, position_size_from_tick, validate_trade_risk
 from .screen import ScreenObserver, next_step
+from .server_selector import ServerSelectionDialog
 from .strategy import RuleBasedStrategy
+from .subscription import SubscriptionManager
 
 
 class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments,too-many-statements
@@ -34,6 +36,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         screen_capture=None,
         aggregator=None,
         trader=None,
+        subscription: SubscriptionManager | None = None,
     ):
         """Create the always-on-top observer window."""
         self.config = config
@@ -48,6 +51,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.screen_capture = screen_capture
         self.aggregator = aggregator
         self.trader = trader
+        self.subscription = subscription
         self.last_signal = None
         self.alerts = AlertEngine()
         self.screen_observer = ScreenObserver()
@@ -509,4 +513,42 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
 
     def run(self):
         """Start the Tkinter event loop."""
+        if self.subscription:
+            dialog = ServerSelectionDialog(self.root, self.subscription.tracker)
+
+            def on_select(tier: str) -> None:
+                self.subscription.selected_tier = tier
+                self.config.subscription_tier = tier
+                allowed, reason = self.subscription.can_access()
+                if allowed:
+                    self.tier_label.config(
+                        text=f"TIER: {self.subscription.tier_info().name}"
+                    )
+                    self._show_alert(f"Server: {reason}")
+                else:
+                    self._show_error_banner(reason)
+
+            dialog.on_select(on_select)
+            selected = dialog.show()
+            if not selected:
+                self.root.destroy()
+                return
+
+            allowed, reason = self.subscription.can_access()
+            if not allowed:
+                self._show_error_banner(reason)
+                self.root.destroy()
+                return
+
+            consumed, msg = self.subscription.consume_access()
+            if not consumed:
+                self._show_error_banner(msg)
+                self.root.destroy()
+                return
+
+            self.tier_label.config(
+                text=f"TIER: {self.subscription.tier_info().name}"
+            )
+            self._show_alert(f"Connected: {msg}")
+
         self.root.mainloop()

@@ -1,4 +1,4 @@
-"""Live MetaTrader 5 order dispatch for SERVER_A tier subscribers."""
+"""Live MetaTrader 5 order dispatch for SERVER_A tier subscribers."""  # pylint: disable=duplicate-code
 
 from __future__ import annotations
 

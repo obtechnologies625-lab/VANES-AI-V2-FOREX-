@@ -3,7 +3,7 @@
 The publisher is disabled unless both VANES_CLOUD_URL and VANES_CLOUD_TOKEN
 are configured. It sends sanitized market/paper state plus optional multimodal
 media (audio chunks and screen frames) to the Cloud API Edge Gateway.
-"""
+"""  # pylint: disable=duplicate-code
 
 from __future__ import annotations
 

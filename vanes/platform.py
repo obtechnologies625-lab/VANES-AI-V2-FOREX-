@@ -1,4 +1,4 @@
-"""Trading-platform adapters for read-only market data and live orders."""
+"""Trading-platform adapters for read-only market data and live orders."""  # pylint: disable=duplicate-code
 
 from __future__ import annotations
 

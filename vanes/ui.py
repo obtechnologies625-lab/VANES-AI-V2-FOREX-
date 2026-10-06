@@ -1,6 +1,5 @@
 """Desktop observer UI for VANES-AI V2."""
 
-import datetime
 import os
 import tkinter as tk
 

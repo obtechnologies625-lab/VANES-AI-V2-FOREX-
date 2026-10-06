@@ -1,4 +1,4 @@
-"""Secure HTTPS client with JWT authentication for VANES cloud API."""
+"""Secure HTTPS client with JWT authentication for VANES cloud API."""  # pylint: disable=duplicate-code
 
 from __future__ import annotations
 

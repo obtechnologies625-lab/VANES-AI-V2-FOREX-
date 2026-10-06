@@ -10,14 +10,13 @@ from .paper import PaperTrader
 from .platform import MT5Adapter
 from .risk import daily_loss_limit
 from .server import LocalBridge
-from .server_selector import ServerSelectionDialog
 from .strategy import RuleBasedStrategy, StrategyConfig
 from .subscription import SubscriptionManager
 from .trader import MT5Trader
 from .ui import Overlay
 
 
-def main():
+def main():  # pylint: disable=too-many-locals
     """Start the VANES desktop observer, local MT5 bridge, and multimodal pipeline."""
     config = AppConfig.from_environment()
     subscription = SubscriptionManager(config)

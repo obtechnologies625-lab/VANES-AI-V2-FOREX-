@@ -82,7 +82,7 @@ class ServerSelectionDialog:
             select_btn = ttk.Button(
                 frame,
                 text="SELECT",
-                command=lambda t=tier_id: self._select(tier_id),
+                command=lambda tier=tier_id: self._select(tier),
             )
             select_btn.pack(pady=(0, 15))
 

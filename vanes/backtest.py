@@ -393,6 +393,10 @@ def run_tick_backtest(
             if open_trade is not None:
                 continue
 
+        # A close on the interval's last tick leaves no tick to enter on.
+        if consumed >= len(interval_ticks):
+            continue
+
         if cfg.max_trades is not None and len(trades) >= cfg.max_trades:
             break
 

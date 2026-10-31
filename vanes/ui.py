@@ -57,6 +57,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.screen_observer = ScreenObserver()
         self._alert_queue: list[str] = []
         self._last_cloud_error = ""
+        self._last_position_count = -1
 
         self.root = tk.Tk()
         self.root.title("VANES-AI V2 • FOREX")
@@ -187,7 +188,20 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         else:
             self.trader_status.config(text="Trader: tier locked")
 
-    def refresh(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
+    def refresh(self):
+        """Refresh the overlay, keeping the update loop alive across errors."""
+        try:
+            self._refresh_once()
+        except tk.TclError:
+            return
+        except Exception as exc:  # pylint: disable=broad-except
+            try:
+                self._show_error_banner(f"Refresh failed: {exc}"[:80])
+            except tk.TclError:
+                return
+        self.root.after(self.config.refresh_ms, self.refresh)
+
+    def _refresh_once(self):  # pylint: disable=too-many-locals,too-many-branches,too-many-statements
         """Refresh quotes, analysis, risk reference, and bridge state."""
         audio_chunks = []
         screen_frames = []
@@ -506,10 +520,11 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self._update_trader_status()
         if self.trader and self.config.subscription_tier == "SERVER_A":
             positions = self.trader.sync_positions()
-            if positions:
-                self._show_alert(f"Positions: {len(positions)} open")
-
-        self.root.after(self.config.refresh_ms, self.refresh)
+            count = len(positions)
+            if count != self._last_position_count:
+                self._last_position_count = count
+                if count:
+                    self._show_alert(f"Positions: {count} open")
 
     def run(self):
         """Start the Tkinter event loop."""

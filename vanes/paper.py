@@ -65,6 +65,7 @@ class PaperTrader:  # pylint: disable=too-many-arguments,too-many-positional-arg
         self, trade: PaperTrade, exit_price: float, closed_at: int
     ) -> float:
         """Close a simulated trade and update balance."""
+        self._reset_day_if_needed()
         if (
             exit_price <= 0
             or trade not in self.trades

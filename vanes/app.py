@@ -27,7 +27,7 @@ def main():  # pylint: disable=too-many-locals
         return
 
     adapter = MT5Adapter()
-    bridge = LocalBridge()
+    bridge = LocalBridge(host=config.chat_host, port=config.chat_port)
     strategy = RuleBasedStrategy(
         StrategyConfig(max_spread_points=config.max_spread_points)
     )
@@ -92,8 +92,8 @@ def main():  # pylint: disable=too-many-locals
         message=status.message,
     )
     bridge.start()
-    print("VANES bridge: http://127.0.0.1:8765/state")
-    print("VANES realtime chat: http://127.0.0.1:8765/chat")
+    print(f"VANES bridge: http://{config.chat_host}:{config.chat_port}/state")
+    print(f"VANES realtime chat: http://{config.chat_host}:{config.chat_port}/chat")
 
     try:
         Overlay(

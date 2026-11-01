@@ -51,13 +51,16 @@ class MT5Trader:
             self._last_error = "No platform adapter configured"
             return False
         try:
-            import MetaTrader5 as mt5  # pylint: disable=import-outside-toplevel
-            self._mt5 = mt5
-            self._last_error = ""
-            return True
+            import MetaTrader5 as mt5  # pylint: disable=import-outside-toplevel,import-error
         except ImportError:
             self._last_error = "MetaTrader5 package is not installed"
             return False
+        if not mt5.initialize():
+            self._last_error = f"MetaTrader 5 initialize() failed: {mt5.last_error()}"
+            return False
+        self._mt5 = mt5
+        self._last_error = ""
+        return True
 
     @property
     def last_error(self) -> str:

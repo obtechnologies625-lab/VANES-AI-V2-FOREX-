@@ -67,15 +67,6 @@ def main():  # pylint: disable=too-many-locals
     if config.capture_screen_enabled:
         screen_capture.start()
 
-    trader = None
-    if subscription.selected_tier == "SERVER_A":
-        trader = MT5Trader(adapter)
-        if trader.connect():
-            print("VANES live trader: enabled (SERVER_A)")
-        else:
-            print(f"VANES live trader: disabled ({trader.last_error})")
-            trader = None
-
     paper = PaperTrader(
         config.paper_start_balance,
         daily_loss_limit(
@@ -91,6 +82,16 @@ def main():  # pylint: disable=too-many-locals
         connected=status.connected,
         message=status.message,
     )
+
+    trader = None
+    if subscription.selected_tier == "SERVER_A":
+        trader = MT5Trader(adapter)
+        if trader.connect():
+            print("VANES live trader: enabled (SERVER_A)")
+        else:
+            print(f"VANES live trader: disabled ({trader.last_error})")
+            trader = None
+
     bridge.start()
     print(f"VANES bridge: http://{config.chat_host}:{config.chat_port}/state")
     print(f"VANES realtime chat: http://{config.chat_host}:{config.chat_port}/chat")

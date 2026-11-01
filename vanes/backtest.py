@@ -525,6 +525,13 @@ def run_tick_backtest(
                 "END",
             )
         )
+        peak = max(peak, balance)
+        drawdown = peak - balance
+        max_drawdown = max(max_drawdown, drawdown)
+        max_drawdown_percent = max(
+            max_drawdown_percent,
+            drawdown / peak * 100.0 if peak > 0 else 0.0,
+        )
 
     return _build_report(
         cfg.starting_balance,

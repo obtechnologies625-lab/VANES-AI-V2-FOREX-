@@ -100,7 +100,7 @@ const verifyJwt = async (token, secret) => {
       ["verify"]
     );
     const expectedSig = await crypto.subtle.verify(
-      "HMAC", key, hexToUint8Array(signatureB64), new TextEncoder().encode(data)
+      "HMAC", key, base64UrlToUint8Array(signatureB64), new TextEncoder().encode(data)
     );
     if (!expectedSig) return null;
     const payload = JSON.parse(atou(payloadB64));
@@ -111,19 +111,19 @@ const verifyJwt = async (token, secret) => {
   }
 };
 
-const atou = (b64) => {
+const base64UrlToBase64 = (b64) => {
   const pad = b64.length % 4;
   const adjusted = pad ? b64.padEnd(b64.length + (4 - pad), "=") : b64;
-  return new TextDecoder().decode(
-    Uint8Array.from(atob(adjusted), (c) => c.charCodeAt(0))
-  );
+  return adjusted.replace(/-/g, "+").replace(/_/g, "/");
 };
 
-const hexToUint8Array = (hex) => {
-  const bytes = new Uint8Array(Math.ceil(hex.length / 2));
-  for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(hex.substr(i * 2, 2), 16);
-  return bytes;
-};
+const atou = (b64) =>
+  new TextDecoder().decode(
+    Uint8Array.from(atob(base64UrlToBase64(b64)), (c) => c.charCodeAt(0))
+  );
+
+const base64UrlToUint8Array = (b64) =>
+  Uint8Array.from(atob(base64UrlToBase64(b64)), (c) => c.charCodeAt(0));
 
 const reply = (m, s) => {
   m = String(m || "").toLowerCase();

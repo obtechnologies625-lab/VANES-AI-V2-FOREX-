@@ -2,6 +2,8 @@
 
 This folder is the public cloud web layer for VANES-AI V2.
 
+**Live deployment:** https://vanes-ai-v2-forex.obtechnologies625.workers.dev (marketplace portal at `/portal`, brand logo at `/brand.svg`).
+
 ## Deploy directly from GitHub
 
 In the Cloudflare dashboard:

@@ -8,6 +8,8 @@
 
 VANES-AI V2 is a market-analysis and paper-trading observer for MetaTrader 5. It can optionally capture microphone audio and MT5 screen frames, aggregate them into secure packets, and send them to a Cloudflare-backed AI gateway for multimodal analysis. PRO tier subscribers receive live order dispatch instructions that can be executed via the MT5 Python API, and can list strategies for sale on the built-in marketplace.
 
+**Live cloud demo:** https://vanes-ai-v2-forex.obtechnologies625.workers.dev — dashboard at `/`, strategy marketplace portal at `/portal`.
+
 ## Realtime command center
 
 Start VANES with `python -m vanes.app`, then open **http://127.0.0.1:8765/chat**. The browser command center refreshes live market state every second and lets you ask VANES about the quote, signal, indicators, structure, risk, paper account, and reasons for WAIT.

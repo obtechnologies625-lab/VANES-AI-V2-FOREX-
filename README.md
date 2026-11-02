@@ -121,8 +121,9 @@ Run:
     python -m compileall -q vanes tests
     pylint vanes
     node --check cloudflare/src/index.js
+    (cd cloudflare && npm install && npm test)
 
-The suite covers indicators, risk sizing, paper trading, backtests, alerts, the chatbot, the local bridge, subscription tiers, and the strategy marketplace. GitHub Actions runs syntax checks, unit tests, the chatbot E2E and Pylint on Python 3.10, 3.11 and 3.12, plus Cloudflare Worker validation (`node --check` and `wrangler deploy --dry-run`).
+The Python suite covers indicators, risk sizing, paper trading, backtests, alerts, the chatbot, the local bridge, subscription tiers, and the strategy marketplace. The Cloudflare Worker suite (`cloudflare/test/worker.test.mjs`, Node's built-in runner with a mock KV) covers the brand/portal/dashboard routes, health/state, marketplace validation, and the JWT-gated tier router. GitHub Actions runs syntax checks, unit tests, the chatbot E2E and Pylint on Python 3.10, 3.11 and 3.12, plus Cloudflare Worker validation (`node --check`, `npm test`, and `wrangler deploy --dry-run`).
 
 ## Architecture
 

@@ -47,5 +47,7 @@ jobs:
         run: npm install
       - name: Validate Worker source
         run: node --check src/index.js
+      - name: Worker unit tests
+        run: npm test
       - name: Validate Wrangler configuration
         run: npx wrangler deploy --dry-run

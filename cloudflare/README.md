@@ -19,10 +19,13 @@ After that, pushes to the configured GitHub branch can trigger Cloudflare deploy
 
 ## What works in the cloud
 
-- Responsive VANES command-center dashboard
+- Responsive VANES command-center dashboard (company brand logo served at `/brand.svg`)
 - Cloud health endpoint: `/api/health`
 - Market state endpoint: `/api/state`
 - Read-only cloud chatbot: `/api/chat`
+- Strategy marketplace portal: `/portal` (register as a forex pro, list strategies)
+- Marketplace JSON API: `GET/POST /api/strategies`, `GET /api/sellers`, `POST /api/sellers/register`
+- JWT-gated multimodal analysis: `POST /api/v1/analyze` (Beginner / Intermediate / Pro tier router)
 - Safe default WAIT state when no market source is connected
 
 ## Important MT5 architecture
@@ -31,8 +34,19 @@ Cloudflare Workers cannot run the Python MetaTrader5 package or the Tkinter desk
 
 Do not put MT5 passwords, broker credentials, or order-execution code in browser JavaScript or public Worker variables.
 
-The current Worker deliberately starts without a database/KV requirement so the first GitHub → Cloudflare deployment is straightforward and safe.
+The Worker binds a KV namespace (`VANES_STATE`) for realtime state, history, and the strategy marketplace. `wrangler.toml` ships with a placeholder id — replace it with a real namespace id (see below) before deploying. When KV is absent the marketplace routes return `503` and the dashboard falls back to the safe default state, so the Worker still runs.
 
+## Tests
+
+The Worker has an offline test suite (Node's built-in runner, no network, mock KV):
+
+```bash
+cd cloudflare
+npm install
+npm test
+```
+
+It covers the brand/portal/dashboard routes, health/state, the marketplace register + strategy-submit validation, the 503 no-KV path, and the `/api/v1/analyze` JWT gate and tier router (PRO order dispatch, BEGINNER text-only, unknown-tier 403, expired/invalid token 401). CI runs it on every push.
 
 ## Live MT5 → Cloudflare state bridge
 
@@ -56,13 +70,15 @@ id = "YOUR_REAL_NAMESPACE_ID"
 
 Do not commit a publish token to GitHub.
 
-### 2. Configure the Worker secret
+### 2. Configure the Worker secrets
 
 ```bash
-npx wrangler secret put VANES_PUBLISH_TOKEN
+npx wrangler secret put VANES_PUBLISH_TOKEN   # desktop → cloud state publisher
+npx wrangler secret put VANES_JWT_SECRET      # HS256 secret shared with the desktop JWT client
+npx wrangler secret put VANES_GEMINI_API_KEY  # Gemini 2.5 multimodal analysis key
 ```
 
-Enter a long random token when prompted.
+Enter a long random value when prompted. `VANES_JWT_SECRET` must match the secret the desktop app signs its account tokens with, or `/api/v1/analyze` returns `401`. Without `VANES_GEMINI_API_KEY` the analyze route still authenticates but returns a "Gemini API key not configured" analysis.
 
 ### 3. Deploy
 

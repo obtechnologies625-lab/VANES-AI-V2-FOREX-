@@ -5,6 +5,16 @@ compatibility_date = "2026-09-19"
 [vars]
 VANES_PAYWALL = "0"
 
+# Realtime state + strategy-marketplace persistence.
+# Create the namespace once, then paste the returned id below:
+#   npx wrangler kv namespace create VANES_STATE
+# Secrets (never commit them) are set with:
+#   npx wrangler secret put VANES_JWT_SECRET
+#   npx wrangler secret put VANES_GEMINI_API_KEY
+[[kv_namespaces]]
+binding = "VANES_STATE"
+id = "00000000000000000000000000000000"
+
 [observability]
 enabled = false
 head_sampling_rate = 1

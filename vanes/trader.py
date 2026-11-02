@@ -1,4 +1,4 @@
-"""Live MetaTrader 5 order dispatch for SERVER_A tier subscribers."""  # pylint: disable=duplicate-code
+"""Live MetaTrader 5 order dispatch for PRO tier subscribers."""  # pylint: disable=duplicate-code
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ class OrderResult:  # pylint: disable=too-many-instance-attributes  # pylint: di
 
 @dataclass
 class ActivePosition:  # pylint: disable=too-many-instance-attributes  # pylint: disable=too-many-instance-attributes
-    """Track an open SERVER_A position."""
+    """Track an open PRO position."""
 
     ticket: int
     symbol: str
@@ -37,7 +37,7 @@ class ActivePosition:  # pylint: disable=too-many-instance-attributes  # pylint:
 
 
 class MT5Trader:
-    """Place and track live MT5 orders for authenticated SERVER_A clients."""
+    """Place and track live MT5 orders for authenticated PRO clients."""
 
     def __init__(self, adapter):
         self._adapter = adapter
@@ -74,7 +74,7 @@ class MT5Trader:
         volume: float,
         sl: float,
         tp: float,
-        comment: str = "VANES-AI SERVER_A",
+        comment: str = "VANES-AI PRO",
     ) -> OrderResult:
         """Place a live market order if the adapter and symbol are ready."""
         if self._mt5 is None:
@@ -172,7 +172,7 @@ class MT5Trader:
             "price": close_price,
             "deviation": 10,
             "magic": 314159,
-            "comment": "VANES-AI SERVER_A close",
+            "comment": "VANES-AI PRO close",
             "type_time": self._mt5.ORDER_TIME_GTC,
             "type_filling": self._mt5.ORDER_FILLING_FOK,
         }

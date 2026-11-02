@@ -33,7 +33,7 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
     cloud_token: str = ""
     cloud_publish_interval: float = 3.0
     cloud_timeout: float = 5.0
-    subscription_tier: str = "SERVER_B"
+    subscription_tier: str = "INTERMEDIATE"
     jwt_secret: str = ""
     gemini_api_key: str = ""
 
@@ -84,7 +84,7 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
                 "VANES_CLOUD_PUBLISH_INTERVAL", 3.0, float
             ),
             cloud_timeout=number("VANES_CLOUD_TIMEOUT", 5.0, float),
-            subscription_tier=os.getenv("VANES_SUBSCRIPTION_TIER", "SERVER_B"),
+            subscription_tier=os.getenv("VANES_SUBSCRIPTION_TIER", "INTERMEDIATE"),
             jwt_secret=os.getenv("VANES_JWT_SECRET", ""),
             gemini_api_key=os.getenv("VANES_GEMINI_API_KEY", ""),
             capture_audio_enabled=os.getenv(

@@ -78,7 +78,7 @@ class PacketAggregator:  # pylint: disable=too-few-public-methods
 
     def __init__(
         self,
-        subscription_tier: str = "SERVER_B",
+        subscription_tier: str = "INTERMEDIATE",
         max_audio_chunks: int = 4,
         max_screen_frames: int = 4,
         max_packet_bytes: int = 524288,

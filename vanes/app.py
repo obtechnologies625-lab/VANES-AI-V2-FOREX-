@@ -11,7 +11,7 @@ from .platform import MT5Adapter
 from .risk import daily_loss_limit
 from .server import LocalBridge
 from .strategy import RuleBasedStrategy, StrategyConfig
-from .subscription import SubscriptionManager
+from .subscription import SubscriptionManager, tier_allows_live
 from .trader import MT5Trader
 from .ui import Overlay
 
@@ -84,10 +84,10 @@ def main():  # pylint: disable=too-many-locals
     )
 
     trader = None
-    if subscription.selected_tier == "SERVER_A":
+    if tier_allows_live(subscription.selected_tier):
         trader = MT5Trader(adapter)
         if trader.connect():
-            print("VANES live trader: enabled (SERVER_A)")
+            print("VANES live trader: enabled (PRO)")
         else:
             print(f"VANES live trader: disabled ({trader.last_error})")
             trader = None
@@ -95,6 +95,7 @@ def main():  # pylint: disable=too-many-locals
     bridge.start()
     print(f"VANES bridge: http://{config.chat_host}:{config.chat_port}/state")
     print(f"VANES realtime chat: http://{config.chat_host}:{config.chat_port}/chat")
+    print(f"VANES strategy portal: http://{config.chat_host}:{config.chat_port}/portal")
 
     try:
         Overlay(

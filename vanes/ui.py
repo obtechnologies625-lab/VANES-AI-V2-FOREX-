@@ -1,12 +1,12 @@
 """Desktop observer UI for VANES-AI V2."""
 
-import os
 import tkinter as tk
 
-from PIL import Image, ImageTk
+from PIL import ImageTk
 
 from .alerts import AlertEngine
 from .audit import AuditLogger
+from .branding import render_icon
 from .cloud import CloudStatePublisher, CloudPublishResult
 from .config import AppConfig
 from .market import atr
@@ -16,7 +16,7 @@ from .risk import build_risk_plan, position_size_from_tick, validate_trade_risk
 from .screen import ScreenObserver, next_step
 from .server_selector import ServerSelectionDialog
 from .strategy import RuleBasedStrategy
-from .subscription import SubscriptionManager
+from .subscription import SubscriptionManager, tier_allows_live
 
 
 class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments,too-many-statements
@@ -146,16 +146,12 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.root.after(100, self.refresh)
 
     def _set_window_icon(self) -> None:
-        """Set the window icon from the project logo if available."""
+        """Render and set the VANES wheel-and-bolt window icon."""
         try:
-            icon_path = os.path.join(
-                os.path.dirname(__file__), "..", "icon.svg"
-            )
-            image = Image.open(icon_path)
-            icon = ImageTk.PhotoImage(image)
+            icon = ImageTk.PhotoImage(render_icon(64))
             self.root.iconphoto(True, icon)
             self._icon_image = icon
-        except (OSError, ImportError):
+        except (tk.TclError, ImportError, OSError):
             pass
 
     def _show_error_banner(self, message: str) -> None:
@@ -183,8 +179,8 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         """Update the trader status label."""
         if self.trader is None:
             self.trader_status.config(text="Trader: inactive")
-        elif self.config.subscription_tier == "SERVER_A":
-            self.trader_status.config(text="Trader: SERVER_A LIVE")
+        elif tier_allows_live(self.config.subscription_tier):
+            self.trader_status.config(text="Trader: PRO LIVE")
         else:
             self.trader_status.config(text="Trader: tier locked")
 
@@ -509,7 +505,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                     if response.data.get("analysis"):
                         self._show_alert(f"AI: {response.data['analysis'][:120]}")
                     if response.data.get("order_dispatch") == "READY":
-                        self._show_alert("SERVER_A: Order dispatch ready")
+                        self._show_alert("PRO: Order dispatch ready")
                 else:
                     self.cloud_status.config(text=f"Cloud: {response.error[:40]}")
                     if response.status == 402:
@@ -518,7 +514,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                         self._show_error_banner(response.error[:80])
 
         self._update_trader_status()
-        if self.trader and self.config.subscription_tier == "SERVER_A":
+        if self.trader and tier_allows_live(self.config.subscription_tier):
             positions = self.trader.sync_positions()
             count = len(positions)
             if count != self._last_position_count:

@@ -1,6 +1,6 @@
 import { callGemini } from "./gemini";
 
-const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-labelledby="vlT vlD"><title id="vlT">VANES AI logo</title><desc id="vlD">The VANES AI six turbine wheel beside the VANES AI wordmark and the line Versatile Adaptive Neuro Emergent System.</desc><defs><radialGradient id="vlBg" cx=".5" cy=".42" r=".9"><stop stop-color="#101a3a"/><stop offset=".7" stop-color="#050916"/><stop offset="1" stop-color="#02040c"/></radialGradient><linearGradient id="vlN" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eaffff"/><stop offset=".28" stop-color="#27e9ff"/><stop offset=".66" stop-color="#7654ff"/><stop offset="1" stop-color="#ff2bd6"/></linearGradient><linearGradient id="vlRule" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#27e9ff"/><stop offset=".5" stop-color="#7654ff"/><stop offset="1" stop-color="#ff2bd6"/></linearGradient><filter id="vlG" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4" result="x"/><feMerge><feMergeNode in="x"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="760" height="200" rx="34" fill="url(#vlBg)"/><g transform="translate(102 100) scale(.332)" filter="url(#vlG)"><circle r="206" fill="none" stroke="url(#vlN)" stroke-width="16"/><g stroke="#7fd8ff" stroke-width="6" opacity=".8"><path d="M0-206V-186" transform="rotate(30)"/><path d="M0-206V-186" transform="rotate(90)"/><path d="M0-206V-186" transform="rotate(150)"/><path d="M0-206V-186" transform="rotate(210)"/><path d="M0-206V-186" transform="rotate(270)"/><path d="M0-206V-186" transform="rotate(330)"/></g><g fill="url(#vlN)" stroke="#eaffff" stroke-width="7" stroke-linejoin="round"><path d="M-14-58 26-186 66-158 24-50Z"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(60)"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(120)"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(180)"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(240)"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(300)"/></g><circle r="74" fill="#070d20" stroke="url(#vlN)" stroke-width="16"/><circle r="42" fill="#101936" stroke="#d7fbff" stroke-width="6"/><circle r="19" fill="url(#vlN)"/></g><g font-family="'Segoe UI',Roboto,Arial,sans-serif"><text x="200" y="104" font-size="60" font-weight="900" letter-spacing="3" fill="#f3fbff">VANES <tspan fill="#27e9ff">AI</tspan></text><rect x="203" y="122" width="512" height="3" fill="url(#vlRule)"/><rect x="452" y="118.5" width="10" height="10" transform="rotate(45 457 123.5)" fill="#ff2bd6"/><text x="204" y="156" font-size="13" font-weight="700" letter-spacing="3.5" fill="#9eb2cf">VERSATILE ADAPTIVE NEURO EMERGENT SYSTEM</text></g></svg>`;
+const FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" role="img" aria-labelledby="vlT vlD"><title id="vlT">VANES AI logo</title><desc id="vlD">The VANES AI six turbine wheel beside the VANES AI wordmark and the line Versatile Adaptive Neuro Emergent System.</desc><defs><radialGradient id="vlBg" cx=".5" cy=".42" r=".9"><stop stop-color="#101a3a"/><stop offset=".7" stop-color="#050916"/><stop offset="1" stop-color="#02040c"/></radialGradient><linearGradient id="vlN" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#eaffff"/><stop offset=".28" stop-color="#27e9ff"/><stop offset=".66" stop-color="#7654ff"/><stop offset="1" stop-color="#ff2bd6"/></linearGradient><linearGradient id="vlRule" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#27e9ff"/><stop offset=".5" stop-color="#7654ff"/><stop offset="1" stop-color="#ff2bd6"/></linearGradient><filter id="vlG" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="4" result="x"/><feMerge><feMergeNode in="x"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs><rect width="760" height="200" rx="34" fill="url(#vlBg)"/><g transform="translate(102 100) scale(.332)" filter="url(#vlG)"><circle r="206" fill="none" stroke="url(#vlN)" stroke-width="16"/><g stroke="#7fd8ff" stroke-width="6" opacity=".8"><path d="M0-206V-186" transform="rotate(30)"/><path d="M0-206V-186" transform="rotate(90)"/><path d="M0-206V-186" transform="rotate(150)"/><path d="M0-206V-186" transform="rotate(210)"/><path d="M0-206V-186" transform="rotate(270)"/><path d="M0-206V-186" transform="rotate(330)"/></g><g fill="url(#vlN)" stroke="#eaffff" stroke-width="7" stroke-linejoin="round"><path d="M-14-58 26-186 66-158 24-50Z"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(60)"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(120)"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(180)"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(240)"/><path d="M-14-58 26-186 66-158 24-50Z" transform="rotate(300)"/></g><circle r="74" fill="#070d20" stroke="url(#vlN)" stroke-width="16"/><circle r="42" fill="#101936" stroke="#d7fbff" stroke-width="6"/><path d="M10-48 L-20 6 L0 6 L-10 48 L20-6 L0-6 Z" fill="#ffd84d" stroke="#eaffff" stroke-width="4" stroke-linejoin="round"/></g><g font-family="'Segoe UI',Roboto,Arial,sans-serif"><text x="200" y="104" font-size="60" font-weight="900" letter-spacing="3" fill="#f3fbff">VANES <tspan fill="#27e9ff">AI</tspan></text><rect x="203" y="122" width="512" height="3" fill="url(#vlRule)"/><rect x="452" y="118.5" width="10" height="10" transform="rotate(45 457 123.5)" fill="#ff2bd6"/><text x="204" y="156" font-size="13" font-weight="700" letter-spacing="3.5" fill="#9eb2cf">VERSATILE ADAPTIVE NEURO EMERGENT SYSTEM</text></g></svg>`;
 
 const DEFAULT_STATE = {
   symbol: "EURUSD",
@@ -38,6 +38,19 @@ const num = (v, f = 0) => {
   const n = Number(v);
   return Number.isFinite(n) ? n : f;
 };
+
+const kvList = async (env, key) => {
+  if (!env.VANES_STATE) return [];
+  try {
+    const x = await env.VANES_STATE.get(key);
+    const parsed = x ? JSON.parse(x) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) {
+    return [];
+  }
+};
+
+const portalPage = () => `<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>VANES-AI V2 | Strategy Marketplace</title><style>*{box-sizing:border-box}body{margin:0;background:#061019;color:#edf7f8;font:15px system-ui}main{max-width:1000px;margin:auto;padding:24px}.brand{font-size:24px;font-weight:900}.bolt{color:#ffd84d}.tag{color:#7893a0;font-size:12px;letter-spacing:.12em}.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.panel{background:#0d1d28;border:1px solid #1c3948;border-radius:16px;padding:18px}h2{font-size:14px;color:#55e0b8;text-transform:uppercase;letter-spacing:.06em}label{display:block;font-size:12px;color:#7893a0;margin:9px 0 4px}input,textarea,select{width:100%;padding:10px;border-radius:9px;border:1px solid #294858;background:#07131b;color:#fff;font:inherit}textarea{min-height:76px}button{margin-top:10px;padding:10px 15px;border:0;border-radius:9px;background:#55e0b8;font-weight:800;cursor:pointer}.msg{margin-top:8px;font-size:13px;min-height:16px}.ok{color:#55e0b8}.err{color:#ffb3b8}.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:10px}.card{background:#0d1d28;border:1px solid #1c3948;border-radius:12px;padding:13px}.card b{display:block}.meta{color:#7893a0;font-size:12px;margin-top:5px}.price{color:#ffd84d;font-weight:800}.note{background:#2b2412;border:1px solid #5c4a2a;color:#ffd84d;padding:10px;border-radius:9px;font-size:12px;margin-top:12px}@media(max-width:800px){.grid{grid-template-columns:1fr}}</style><main><div class=brand><span class=bolt>⚡</span> VANES-AI V2</div><div class=tag>STRATEGY MARKETPLACE • SELL YOUR EDGE</div><div class=note>Payments are in preview: listings show “contact for pricing”. No card processor is connected yet.</div><div class=grid><div class=panel><h2>1 · Register as a Forex Pro</h2><label>Handle</label><input id=handle maxlength=24><label>Full name</label><input id=name maxlength=60><label>Email</label><input id=email type=email><label>Bio</label><textarea id=bio maxlength=500></textarea><button onclick=reg()>Register</button><div class=msg id=rm></div></div><div class=panel><h2>2 · List a Strategy</h2><label>Seller ID</label><input id=sid><label>Title</label><input id=title maxlength=80><label>Description</label><textarea id=desc maxlength=2000></textarea><label>Price USD (0=free)</label><input id=price type=number min=0 value=99><label>Risk</label><select id=risk><option>low</option><option selected>medium</option><option>high</option></select><button onclick=sub()>List strategy</button><div class=msg id=sm></div></div></div><div class=panel style='margin-top:16px'><h2>Live listings</h2><div class=cards id=list></div></div></main><script>const $=id=>document.getElementById(id);const show=(i,t,ok)=>{const e=$(i);e.textContent=t;e.className='msg '+(ok?'ok':'err')};const post=async(u,b)=>{const r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.json()};async function reg(){try{const d=await post('/api/sellers/register',{handle:$('handle').value,name:$('name').value,email:$('email').value,bio:$('bio').value});if(d.ok){show('rm',d.message+' ID: '+d.seller.seller_id,1);$('sid').value=d.seller.seller_id;load()}else show('rm',d.error,0)}catch(e){show('rm','Portal error',0)}}async function sub(){try{const d=await post('/api/strategies',{seller_id:$('sid').value,title:$('title').value,description:$('desc').value,price:Number($('price').value||0),risk_level:$('risk').value});if(d.ok){show('sm',d.message,1);load()}else show('sm',d.error,0)}catch(e){show('sm','Portal error',0)}}async function load(){try{const l=await(await fetch('/api/strategies')).json();$('list').innerHTML=l.map(s=>'<div class=card><b>'+esc(s.title)+'</b><div class=meta>'+esc(s.timeframe)+' • risk '+esc(s.risk_level)+'</div><div class=meta>'+esc(String(s.description).slice(0,110))+'</div><div class="meta price">'+(s.price>0?'$'+s.price+' — contact':'FREE')+'</div></div>').join('')}catch(e){}}const esc=t=>{const d=document.createElement('div');d.textContent=t==null?'':String(t);return d.innerHTML};load()</script>`;
 
 const normalize = (s) => {
   const alerts = Array.isArray(s.alerts)
@@ -379,16 +392,16 @@ export default {
     if (url.pathname === "/api/v1/analyze" && request.method === "POST") {
       const secret = env.VANES_JWT_SECRET || "";
       const authHeader = request.headers.get("Authorization") || "";
-      const tierHeader = request.headers.get("X-Subscription-Tier") || "SERVER_B";
+      const tierHeader = request.headers.get("X-Subscription-Tier") || "INTERMEDIATE";
       if (!secret) return json({ error: "JWT not configured" }, 500);
       if (!authHeader.startsWith("Bearer ")) return json({ error: "Missing token" }, 401);
       const token = authHeader.slice(7);
       const payload = await verifyJwt(token, secret);
       if (!payload) return json({ error: "Invalid or expired token" }, 401);
-      if (payload.tier === "SERVER_A" && env.VANES_PAYWALL === "1") {
+      if (payload.tier === "PRO" && env.VANES_PAYWALL === "1") {
         return json({ error: "Payment required", paywall: true }, 402);
       }
-      if (!["SERVER_A", "SERVER_B", "SERVER_C"].includes(payload.tier)) {
+      if (!["BEGINNER", "INTERMEDIATE", "PRO"].includes(payload.tier)) {
         return json({ error: "Unknown tier" }, 403);
       }
       try {
@@ -404,7 +417,7 @@ export default {
           sources: result.sources || [],
           server_ts: new Date().toISOString(),
         };
-        if (payload.tier === "SERVER_A") {
+        if (payload.tier === "PRO") {
           response.order_dispatch = "READY";
           response.order_instructions = {
             symbol: packet.symbol,
@@ -412,13 +425,82 @@ export default {
             confidence: result.confidence ?? packet.confidence,
           };
         }
-        if (payload.tier === "SERVER_C") {
+        if (payload.tier === "BEGINNER") {
           response.analysis = "Basic text-only analysis active. Upgrade for multimodal intelligence.";
         }
         return json(response);
       } catch (_) {
         return json({ error: "Invalid packet" }, 400);
       }
+    }
+
+    if (url.pathname === "/portal")
+      return new Response(portalPage(), {
+        headers: { "Content-Type": "text/html;charset=UTF-8" },
+      });
+
+    if (url.pathname === "/api/sellers" && request.method === "GET") {
+      return json(await kvList(env, "sellers"));
+    }
+    if (url.pathname === "/api/strategies" && request.method === "GET") {
+      return json((await kvList(env, "strategies")).reverse());
+    }
+
+    if (url.pathname === "/api/sellers/register" && request.method === "POST") {
+      if (!env.VANES_STATE) return json({ error: "Storage not configured" }, 503);
+      let b;
+      try { b = await request.json(); } catch (_) { return json({ error: "Invalid JSON" }, 400); }
+      const handle = String(b.handle || "").trim();
+      const name = String(b.name || "").trim();
+      const email = String(b.email || "").trim().toLowerCase();
+      if (!/^[A-Za-z0-9_]{3,24}$/.test(handle)) return json({ ok: false, error: "Handle must be 3-24 letters, digits, or underscores" }, 400);
+      if (name.length < 1 || name.length > 60) return json({ ok: false, error: "Name must be 1-60 characters" }, 400);
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ ok: false, error: "A valid email is required" }, 400);
+      const sellers = await kvList(env, "sellers");
+      if (sellers.some((s) => s.handle.toLowerCase() === handle.toLowerCase()))
+        return json({ ok: false, error: "That handle is already registered" }, 400);
+      if (sellers.some((s) => s.email === email))
+        return json({ ok: false, error: "That email is already registered" }, 400);
+      const seller = {
+        seller_id: "sel-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12),
+        handle, name, email,
+        bio: String(b.bio || "").slice(0, 500),
+        registered_at: new Date().toISOString(),
+        status: "active",
+      };
+      sellers.push(seller);
+      await env.VANES_STATE.put("sellers", JSON.stringify(sellers));
+      return json({ ok: true, message: `Welcome, ${handle}. You can now list strategies.`, seller: { seller_id: seller.seller_id, handle } });
+    }
+
+    if (url.pathname === "/api/strategies" && request.method === "POST") {
+      if (!env.VANES_STATE) return json({ error: "Storage not configured" }, 503);
+      let b;
+      try { b = await request.json(); } catch (_) { return json({ error: "Invalid JSON" }, 400); }
+      const sellers = await kvList(env, "sellers");
+      if (!sellers.some((s) => s.seller_id === b.seller_id))
+        return json({ ok: false, error: "Unknown seller; register first" }, 400);
+      const title = String(b.title || "").trim();
+      const description = String(b.description || "").trim();
+      const price = Number(b.price);
+      if (title.length < 3 || title.length > 80) return json({ ok: false, error: "Title must be 3-80 characters" }, 400);
+      if (description.length < 10 || description.length > 2000) return json({ ok: false, error: "Description must be 10-2000 characters" }, 400);
+      if (!Number.isFinite(price) || price < 0) return json({ ok: false, error: "Price must be a non-negative number" }, 400);
+      const risk = ["low", "medium", "high"].includes(b.risk_level) ? b.risk_level : null;
+      if (!risk) return json({ ok: false, error: "Risk level must be low, medium, or high" }, 400);
+      const strategies = await kvList(env, "strategies");
+      const strategy = {
+        strategy_id: "str-" + crypto.randomUUID().replace(/-/g, "").slice(0, 12),
+        seller_id: b.seller_id, title, description, price,
+        risk_level: risk,
+        timeframe: String(b.timeframe || "M15").slice(0, 10),
+        payment_mode: "contact",
+        status: "listed",
+        created_at: new Date().toISOString(),
+      };
+      strategies.push(strategy);
+      await env.VANES_STATE.put("strategies", JSON.stringify(strategies));
+      return json({ ok: true, message: "Strategy listed. Buyers will contact you to purchase.", strategy_id: strategy.strategy_id });
     }
 
     return json({ error: "Not found" }, 404);

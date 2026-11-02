@@ -4,9 +4,9 @@
   <img src="./icon.svg" alt="VANES AI Logo" width="400">
 </p>
 
-> **Realtime Forex Intelligence Command Center** — market data, transparent signals, broker-aware risk references, paper trading, historical replay, MT5 bridge, local chatbot, multimodal cloud AI, and secure live-order dispatch for SERVER_A subscribers.
+> **Realtime Forex Intelligence Command Center** — market data, transparent signals, broker-aware risk references, paper trading, historical replay, MT5 bridge, local chatbot, multimodal cloud AI, secure live-order dispatch for PRO subscribers, and a strategy marketplace where forex pros sell their systems.
 
-VANES-AI V2 is a market-analysis and paper-trading observer for MetaTrader 5. It can optionally capture microphone audio and MT5 screen frames, aggregate them into secure packets, and send them to a Cloudflare-backed AI gateway for multimodal analysis. SERVER_A tier subscribers receive live order dispatch instructions that can be executed via the MT5 Python API.
+VANES-AI V2 is a market-analysis and paper-trading observer for MetaTrader 5. It can optionally capture microphone audio and MT5 screen frames, aggregate them into secure packets, and send them to a Cloudflare-backed AI gateway for multimodal analysis. PRO tier subscribers receive live order dispatch instructions that can be executed via the MT5 Python API, and can list strategies for sale on the built-in marketplace.
 
 ## Realtime command center
 
@@ -98,8 +98,11 @@ The desktop observer does not automatically enter paper positions. This is inten
 2. Install dependencies: `python -m pip install -r requirements.txt`.
 3. Install MT5 support: `python -m pip install -r requirements-mt5.txt`.
 4. Start: `python -m vanes.app`.
-5. Open `http://127.0.0.1:8765/chat`.
-6. For the MT5 chart panel, allow `http://127.0.0.1:8765` under WebRequest settings.
+5. Open `http://127.0.0.1:8765/chat` for the realtime command center.
+6. Open `http://127.0.0.1:8765/portal` for the strategy marketplace.
+7. For the MT5 chart panel, allow `http://127.0.0.1:8765` under WebRequest settings.
+
+The desktop overlay shows the VANES lightning-bolt-in-wheel icon in its title bar and taskbar. The icon is drawn procedurally at startup (`vanes/branding.py`) so it displays on every platform; `icon.svg` is the same mark used for the README and the Worker favicon.
 
 ### Safety defaults
 
@@ -114,10 +117,12 @@ The desktop observer does not automatically enter paper positions. This is inten
 Run:
 
     python -m unittest discover -s tests -v
+    python -m unittest tests.test_e2e -v
     python -m compileall -q vanes tests
     pylint vanes
+    node --check cloudflare/src/index.js
 
-GitHub Actions runs syntax checks, unit tests and Pylint on Python 3.10, 3.11 and 3.12.
+The suite covers indicators, risk sizing, paper trading, backtests, alerts, the chatbot, the local bridge, subscription tiers, and the strategy marketplace. GitHub Actions runs syntax checks, unit tests, the chatbot E2E and Pylint on Python 3.10, 3.11 and 3.12, plus Cloudflare Worker validation (`node --check` and `wrangler deploy --dry-run`).
 
 ## Architecture
 
@@ -174,7 +179,7 @@ GitHub Actions runs syntax checks, unit tests and Pylint on Python 3.10, 3.11 an
     [Display Red Error Banner]         [Render Transparent Alert Text Notification Overlay]
                                                   │
                                                   ▼
-                                     { IF SUBSCRIPTION TIER == "SERVER_A" }
+                                     { IF SUBSCRIPTION TIER == "PRO" }
                                                   │
                                                   ▼
                                      +─────────────────────────+
@@ -186,9 +191,9 @@ GitHub Actions runs syntax checks, unit tests and Pylint on Python 3.10, 3.11 an
 - **Aggregator** (`vanes/aggregator.py`) encapsulates audio, screen, and market state into compact packets.
 - **Secure client** (`vanes/jwt_client.py`) authenticates with short-lived JWTs and sends packets to the Cloud API Edge Gateway.
 - **Cloudflare Worker** (`cloudflare/src/index.js`) verifies JWT tokens, enforces subscription tiers, and routes requests.
-- **Gemini 2.5** multimodal analysis runs server-side for SERVER_A and SERVER_B tiers.
+- **Gemini 2.5** multimodal analysis runs server-side for PRO and INTERMEDIATE tiers.
 - **Overlay UI** (`vanes/ui.py`) shows live analysis, error banners, and transparent alert notifications.
-- **Live trader** (`vanes/trader.py`) dispatches MT5 orders only for SERVER_A tier with explicit user consent.
+- **Live trader** (`vanes/trader.py`) dispatches MT5 orders only for PRO tier with explicit user consent.
 
 ## Multimodal pipeline
 
@@ -201,21 +206,35 @@ Both streams are aggregated with the latest market state and sent to the Cloud A
 
 ## Subscription tiers
 
-| Tier | Multimodal | AI Analysis | Live Orders |
-|------|-----------|-------------|-------------|
-| SERVER_A | Full audio + screen | Gemini 2.5 | Yes (MT5) |
-| SERVER_B | Full audio + screen | Gemini 2.5 | No |
-| SERVER_C | Text only | Basic rules | No |
+Three servers are offered, from beginner to professional:
+
+| Tier | Price | Multimodal | AI Analysis | Live Orders | Sell Strategies |
+|------|-------|-----------|-------------|-------------|-----------------|
+| BEGINNER | $49 | No | Basic rules | No | No |
+| INTERMEDIATE | $149 | Full audio + screen | Gemini 2.5 | No | Browse only |
+| PRO | $499 | Full audio + screen | Gemini 2.5 | Yes (MT5) | Yes |
 
 Set the tier with:
 
-    VANES_SUBSCRIPTION_TIER=SERVER_A
+    VANES_SUBSCRIPTION_TIER=PRO
+
+Each tier includes 5 free trials tracked locally in `data/vanes_trials.json`; after that the tier requires payment. The default tier is `INTERMEDIATE`.
+
+## Strategy marketplace (sell your edge)
+
+Forex pros can register and list strategies for sale. Open the portal at **http://127.0.0.1:8765/portal** while VANES is running (or `/portal` on the deployed Cloudflare Worker).
+
+1. **Register** with a handle, name, email, and short bio. You receive a `seller_id`.
+2. **List a strategy** with a title, description, price (USD, `0` = free), risk level, and timeframe.
+3. **Buyers browse** the live listings. Payments are in preview: each paid listing shows "contact for pricing" and no card processor is connected yet, so buyers reach sellers directly. A Stripe integration can be added later without changing the store schema.
+
+Listings persist locally in `data/vanes_marketplace.json` (or in Worker KV when deployed). Endpoints: `GET /portal`, `POST /api/sellers/register`, `POST /api/strategies`, `GET /api/strategies`, `GET /api/sellers`. Only the PRO tier may list strategies for sale.
 
 ## Secure inter-process pipeline
 
 - **JWT authentication** — every cloud request carries a short-lived HMAC-SHA256 JWT signed with `VANES_JWT_SECRET`.
 - **Token verification** — the Cloudflare Worker rejects expired or invalid tokens with HTTP 401.
-- **Paywall enforcement** — when `VANES_PAYWALL=1`, SERVER_A requests return HTTP 402 until payment is confirmed.
+- **Paywall enforcement** — when `VANES_PAYWALL=1`, PRO requests return HTTP 402 until payment is confirmed.
 - **Error banners** — the desktop overlay shows red error banners for 401/402/network failures.
 - **Transparent alerts** — success notifications and AI analysis summaries appear as transient overlay text.
 
@@ -226,7 +245,7 @@ To enable the multimodal pipeline, set these environment variables:
     VANES_CLOUD_URL=https://your-worker.workers.dev
     VANES_CLOUD_TOKEN=your-publish-token
     VANES_JWT_SECRET=your-jwt-secret
-    VANES_SUBSCRIPTION_TIER=SERVER_B
+    VANES_SUBSCRIPTION_TIER=INTERMEDIATE
     VANES_GEMINI_API_KEY=your-gemini-key
 
 Optional capture settings:
@@ -239,9 +258,9 @@ Optional capture settings:
     VANES_CAPTURE_SCREEN_FPS=1
     VANES_CAPTURE_MAX_PACKET_BYTES=524288
 
-## Live MT5 orders (SERVER_A only)
+## Live MT5 orders (PRO only)
 
-When `VANES_SUBSCRIPTION_TIER=SERVER_A` and the cloud gateway returns `order_dispatch=READY`, the local `MT5Trader` can place and close live positions. This requires:
+When `VANES_SUBSCRIPTION_TIER=PRO` and the cloud gateway returns `order_dispatch=READY`, the local `MT5Trader` can place and close live positions. This requires:
 
 1. MetaTrader 5 running with automated trading enabled.
 2. The Python `MetaTrader5` package installed.
@@ -253,7 +272,7 @@ Order flow:
 - `MT5Trader.place_order()` sends a market order with SL/TP to the broker.
 - Positions are tracked and can be closed via `close_position_by_ticket()`.
 
-**Safety boundary:** Live orders are only dispatched for SERVER_A tier and only after explicit configuration. The default remains `VANES_DRY_RUN=1` (no orders).
+**Safety boundary:** Live orders are only dispatched for PRO tier and only after explicit configuration. The default remains `VANES_DRY_RUN=1` (no orders).
 
 ## Safety boundary
 

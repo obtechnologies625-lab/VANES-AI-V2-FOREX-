@@ -30,7 +30,7 @@ class SecureCloudClient:  # pylint: disable=too-few-public-methods
         url: str,
         token: str,
         jwt_secret: str,
-        subscription_tier: str = "SERVER_B",
+        subscription_tier: str = "INTERMEDIATE",
         timeout: float = 5.0,
     ):
         self.url = url.rstrip("/") + "/api/v1/analyze"

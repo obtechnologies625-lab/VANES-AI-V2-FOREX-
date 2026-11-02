@@ -21,35 +21,16 @@ class TierInfo:
     features: list[str]
 
 
+LIVE_TRADING_TIER = "PRO"
+BASE_TIER = "BEGINNER"
+DEFAULT_TIER = "INTERMEDIATE"
+TIER_ORDER = ("BEGINNER", "INTERMEDIATE", "PRO")
+
 TIERS = {
-    "SERVER_A": TierInfo(
-        id="SERVER_A",
-        name="SERVER A",
-        price=3000.0,
-        trial_limit=5,
-        features=[
-            "Live MT5 order dispatch",
-            "Gemini 2.5 multimodal AI",
-            "Audio + screen capture",
-            "Priority support",
-        ],
-    ),
-    "SERVER_B": TierInfo(
-        id="SERVER_B",
-        name="SERVER B",
-        price=4000.0,
-        trial_limit=5,
-        features=[
-            "Gemini 2.5 multimodal AI",
-            "Audio + screen capture",
-            "Paper trading",
-            "Standard support",
-        ],
-    ),
-    "SERVER_C": TierInfo(
-        id="SERVER_C",
-        name="SERVER C",
-        price=5000.0,
+    "BEGINNER": TierInfo(
+        id="BEGINNER",
+        name="BEGINNER",
+        price=49.0,
         trial_limit=5,
         features=[
             "Basic text analysis",
@@ -57,7 +38,43 @@ TIERS = {
             "Community support",
         ],
     ),
+    "INTERMEDIATE": TierInfo(
+        id="INTERMEDIATE",
+        name="INTERMEDIATE",
+        price=149.0,
+        trial_limit=5,
+        features=[
+            "Gemini 2.5 multimodal AI",
+            "Audio + screen capture",
+            "Paper trading",
+            "Strategy marketplace browsing",
+            "Standard support",
+        ],
+    ),
+    "PRO": TierInfo(
+        id="PRO",
+        name="PRO",
+        price=499.0,
+        trial_limit=5,
+        features=[
+            "Live MT5 order dispatch",
+            "Gemini 2.5 multimodal AI",
+            "Audio + screen capture",
+            "Sell strategies on the marketplace",
+            "Priority support",
+        ],
+    ),
 }
+
+
+def tier_allows_live(tier: str) -> bool:
+    """Return whether a tier may dispatch live MT5 orders."""
+    return tier == LIVE_TRADING_TIER
+
+
+def tier_allows_marketplace_sales(tier: str) -> bool:
+    """Return whether a tier may list strategies for sale."""
+    return tier == LIVE_TRADING_TIER
 
 
 class TrialTracker:
@@ -89,7 +106,7 @@ class TrialTracker:
         """Return remaining free trials for a tier."""
         tier_data = self._data.get(tier, {})
         used = int(tier_data.get("used", 0))
-        limit = TIERS.get(tier, TIERS["SERVER_C"]).trial_limit
+        limit = TIERS.get(tier, TIERS[BASE_TIER]).trial_limit
         return max(0, limit - used)
 
     def use_trial(self, tier: str) -> bool:
@@ -127,7 +144,7 @@ class SubscriptionManager:
         Returns (allowed, reason).
         """
         tier = self.selected_tier
-        info = TIERS.get(tier, TIERS["SERVER_C"])
+        info = TIERS.get(tier, TIERS[BASE_TIER])
 
         if self.tracker.has_paid(tier):
             return True, f"{info.name} - Paid"
@@ -144,7 +161,7 @@ class SubscriptionManager:
         Returns (allowed, message).
         """
         tier = self.selected_tier
-        info = TIERS.get(tier, TIERS["SERVER_C"])
+        info = TIERS.get(tier, TIERS[BASE_TIER])
 
         if self.tracker.has_paid(tier):
             return True, f"{info.name} - Paid access"
@@ -157,4 +174,4 @@ class SubscriptionManager:
 
     def tier_info(self) -> TierInfo:
         """Return metadata for the selected tier."""
-        return TIERS.get(self.selected_tier, TIERS["SERVER_C"])
+        return TIERS.get(self.selected_tier, TIERS[BASE_TIER])

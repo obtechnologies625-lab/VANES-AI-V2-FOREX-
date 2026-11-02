@@ -207,9 +207,9 @@ class MT5Adapter(PlatformAdapter):
         volume: float,
         sl: float = 0.0,
         tp: float = 0.0,
-        comment: str = "VANES-AI SERVER_A",
+        comment: str = "VANES-AI PRO",
     ) -> dict[str, Any]:
-        """Place a live market order for SERVER_A tier."""
+        """Place a live market order for PRO tier."""
         if self._mt5 is None or not self._select(symbol):
             return {"success": False, "message": "Not connected or symbol unavailable"}
         tick = self._mt5.symbol_info_tick(symbol)
@@ -282,7 +282,7 @@ class MT5Adapter(PlatformAdapter):
             "price": close_price,
             "deviation": 10,
             "magic": 314159,
-            "comment": "VANES-AI SERVER_A close",
+            "comment": "VANES-AI PRO close",
             "type_time": self._mt5.ORDER_TIME_GTC,
             "type_filling": self._mt5.ORDER_FILLING_FOK,
         }

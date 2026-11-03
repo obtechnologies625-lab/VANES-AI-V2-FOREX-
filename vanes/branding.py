@@ -7,8 +7,22 @@ guarantees the icon displays on every platform instead of silently failing.
 from __future__ import annotations
 
 import math
+import os
 
 from PIL import Image, ImageDraw
+
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "assets")
+
+# Multi-resolution sizes baked into the Windows .ico (titlebar + taskbar + alt-tab).
+ICON_SIZES = [
+    (16, 16),
+    (24, 24),
+    (32, 32),
+    (48, 48),
+    (64, 64),
+    (128, 128),
+    (256, 256),
+]
 
 CYAN = (39, 233, 255, 255)
 VIOLET = (118, 84, 255, 255)
@@ -106,3 +120,24 @@ def render_icon(size: int = 256) -> Image.Image:  # pylint: disable=too-many-loc
     ]
     draw.polygon(bolt, fill=BOLT_FILL, outline=WHITE)
     return img
+
+
+def asset_path(name: str) -> str:
+    """Return the absolute path of a bundled brand asset."""
+    return os.path.join(ASSETS_DIR, name)
+
+
+def write_ico(path: str | None = None) -> str:
+    """Render a multi-resolution Windows .ico app icon and return its path."""
+    target = path or asset_path("vanes_icon.ico")
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    render_icon(256).save(target, format="ICO", sizes=ICON_SIZES)
+    return target
+
+
+def write_png(path: str | None = None, size: int = 256) -> str:
+    """Render a square PNG app icon and return its path."""
+    target = path or asset_path("vanes_icon.png")
+    os.makedirs(os.path.dirname(target), exist_ok=True)
+    render_icon(size).save(target, format="PNG")
+    return target

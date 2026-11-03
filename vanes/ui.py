@@ -1,12 +1,15 @@
 """Desktop observer UI for VANES-AI V2."""
 
+import ctypes
+import os
+import sys
 import tkinter as tk
 
 from PIL import ImageTk
 
 from .alerts import AlertEngine
 from .audit import AuditLogger
-from .branding import render_icon
+from .branding import asset_path, render_icon
 from .cloud import CloudStatePublisher, CloudPublishResult
 from .config import AppConfig
 from .market import atr
@@ -146,12 +149,32 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.root.after(100, self.refresh)
 
     def _set_window_icon(self) -> None:
-        """Render and set the VANES wheel-and-bolt window icon."""
+        """Set the small VANES app icon for the titlebar and Windows taskbar."""
+        if sys.platform == "win32":
+            self._set_windows_app_id()
+            ico = asset_path("vanes_icon.ico")
+            if os.path.exists(ico):
+                try:
+                    self.root.iconbitmap(ico)
+                    return
+                except tk.TclError:
+                    pass
         try:
             icon = ImageTk.PhotoImage(render_icon(64))
             self.root.iconphoto(True, icon)
             self._icon_image = icon
         except (tk.TclError, ImportError, OSError):
+            pass
+
+    @staticmethod
+    def _set_windows_app_id() -> None:
+        """Give Windows a dedicated AppUserModelID so the taskbar shows our icon."""
+        try:
+            windll = getattr(ctypes, "windll")
+            windll.shell32.SetCurrentProcessExplicitAppUserModelID(
+                "OBTechnologies.VANES.AI"
+            )
+        except (AttributeError, OSError):
             pass
 
     def _show_error_banner(self, message: str) -> None:

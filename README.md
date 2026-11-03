@@ -4,11 +4,19 @@
   <img src="./icon.svg" alt="VANES AI Logo" width="400">
 </p>
 
+<p align="center">
+  <img src="./vanes/assets/vanes_icon.png" alt="VANES AI app icon" width="96">
+</p>
+
 > **Realtime Forex Intelligence Command Center** — market data, transparent signals, broker-aware risk references, paper trading, historical replay, MT5 bridge, local chatbot, multimodal cloud AI, secure live-order dispatch for PRO subscribers, and a strategy marketplace where forex pros sell their systems.
 
 VANES-AI V2 is a market-analysis and paper-trading observer for MetaTrader 5. It can optionally capture microphone audio and MT5 screen frames, aggregate them into secure packets, and send them to a Cloudflare-backed AI gateway for multimodal analysis. PRO tier subscribers receive live order dispatch instructions that can be executed via the MT5 Python API, and can list strategies for sale on the built-in marketplace.
 
 **Live cloud demo:** https://vanes-ai-v2-forex.obtechnologies625.workers.dev — dashboard at `/`, strategy marketplace portal at `/portal`.
+
+## App icon
+
+The desktop app shows a small square VANES icon — the neon six-turbine wheel with a gold lightning-bolt hub — in the window titlebar and, on Windows, the taskbar and alt-tab switcher (via a dedicated AppUserModelID and a bundled multi-resolution `.ico`). The icon is drawn procedurally by `vanes/branding.py` (PIL cannot decode SVG) and shipped as `vanes/assets/vanes_icon.ico` and `vanes/assets/vanes_icon.png`; regenerate with `python -c "from vanes.branding import write_ico, write_png; write_ico(); write_png()"`.
 
 ## Realtime command center
 

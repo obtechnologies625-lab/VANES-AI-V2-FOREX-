@@ -7,6 +7,7 @@ import tkinter as tk
 
 from PIL import ImageTk
 
+from . import theme
 from .alerts import AlertEngine
 from .audit import AuditLogger
 from .branding import asset_path, render_icon
@@ -67,64 +68,58 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.root.geometry(f"{config.overlay_width}x{config.overlay_height}")
         self.root.resizable(False, False)
         self.root.attributes("-topmost", config.always_on_top)
+        self.root.configure(bg=theme.BG)
         self._set_window_icon()
 
         tk.Label(
-            self.root, text="VANES-AI V2 • FOREX",
-            font=("Segoe UI", 16, "bold"),
+            self.root, text="⚡ VANES-AI V2 • FOREX",
+            font=theme.HEAD_FONT, bg=theme.BG, fg=theme.CYAN,
         ).pack(pady=(12, 2))
-        self.status = tk.Label(self.root, text="Connecting…")
+        self.status = self._label("Connecting…", fg=theme.MUTED)
         self.status.pack()
         self.signal = tk.Label(
-            self.root, text="WAIT", font=("Segoe UI", 30, "bold")
+            self.root, text="WAIT", font=theme.BIG_FONT,
+            bg=theme.BG, fg=theme.MAGENTA,
         )
         self.signal.pack(pady=5)
-        self.confidence = tk.Label(self.root, text="Confidence: —")
+        self.confidence = self._label("Confidence: —", fg=theme.OK)
         self.confidence.pack()
-        self.reason = tk.Label(
-            self.root, text="Collecting market data",
-            wraplength=390, justify="center",
+        self.reason = self._label(
+            "Collecting market data", fg=theme.TEXT, wrap=True
         )
         self.reason.pack(padx=15, pady=5)
-        self.quote = tk.Label(
-            self.root, text="Bid: —   Ask: —   Spread: —"
+        self.quote = self._label(
+            "Bid: —   Ask: —   Spread: —", fg=theme.CYAN
         )
         self.quote.pack(pady=5)
-        self.risk = tk.Label(
-            self.root, text="Risk plan: —",
-            wraplength=390, justify="center",
-        )
+        self.risk = self._label("Risk plan: —", fg=theme.TEXT, wrap=True)
         self.risk.pack(pady=4)
-        self.paper_status = tk.Label(
-            self.root, text="Paper: —", wraplength=390, justify="center"
-        )
+        self.paper_status = self._label("Paper: —", fg=theme.TEXT, wrap=True)
         self.paper_status.pack(pady=2)
-        self.broker_status = tk.Label(
-            self.root, text="Broker spec: waiting",
-            wraplength=390, justify="center"
+        self.broker_status = self._label(
+            "Broker spec: waiting", fg=theme.MUTED, wrap=True
         )
         self.broker_status.pack(pady=2)
-        self.screen_status = tk.Label(
-            self.root, text="Screen: observing desktop context",
-            wraplength=390, justify="center"
+        self.screen_status = self._label(
+            "Screen: observing desktop context", fg=theme.MUTED, wrap=True
         )
         self.screen_status.pack(pady=2)
-        self.next_step = tk.Label(
-            self.root, text="Next step: preparing visual guidance",
-            wraplength=390, justify="center"
+        self.next_step = self._label(
+            "Next step: preparing visual guidance", fg=theme.VIOLET, wrap=True
         )
         self.next_step.pack(pady=2)
         self.tier_label = tk.Label(
             self.root,
             text=f"TIER: {config.subscription_tier}",
-            font=("Segoe UI", 8),
+            font=theme.SMALL_FONT, bg=theme.BG, fg=theme.GOLD,
         )
         self.tier_label.pack(pady=2)
         self.error_banner = tk.Label(
             self.root,
             text="",
-            bg="#2b1218",
-            fg="#ffb3b8",
+            bg="#2b0713",
+            fg=theme.ERR,
+            font=theme.SMALL_FONT,
             wraplength=390,
             justify="center",
         )
@@ -132,21 +127,28 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.cloud_status = tk.Label(
             self.root,
             text="Cloud: disabled",
-            font=("Segoe UI", 8),
+            font=theme.SMALL_FONT, bg=theme.BG, fg=theme.MUTED,
         )
         self.cloud_status.pack(pady=2)
         self.trader_status = tk.Label(
             self.root,
             text="Trader: inactive",
-            font=("Segoe UI", 8),
+            font=theme.SMALL_FONT, bg=theme.BG, fg=theme.MUTED,
         )
         self.trader_status.pack(pady=2)
         tk.Label(
             self.root,
             text="OBSERVING • PAPER ONLY • NO BROKER ORDERS",
-            font=("Segoe UI", 8),
+            font=theme.SMALL_FONT, bg=theme.BG, fg=theme.MAGENTA,
         ).pack(side="bottom", pady=8)
         self.root.after(100, self.refresh)
+
+    def _label(self, text: str, fg: str, wrap: bool = False) -> tk.Label:
+        """Create a neon-themed overlay label."""
+        kwargs = {"font": theme.BODY_FONT, "bg": theme.BG, "fg": fg}
+        if wrap:
+            kwargs.update(wraplength=390, justify="center")
+        return tk.Label(self.root, text=text, **kwargs)
 
     def _set_window_icon(self) -> None:
         """Set the small VANES app icon for the titlebar and Windows taskbar."""

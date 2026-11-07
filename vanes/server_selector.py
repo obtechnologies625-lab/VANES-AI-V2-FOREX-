@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk
 from typing import Callable
 
+from . import theme
 from .subscription import TIERS, TrialTracker
 
 
@@ -23,6 +23,7 @@ class ServerSelectionDialog:
         self.dialog.geometry("600x500")
         self.dialog.resizable(False, False)
         self.dialog.attributes("-topmost", True)
+        self.dialog.configure(bg=theme.BG)
         self.dialog.transient(parent)
         self.dialog.grab_set()
 
@@ -32,17 +33,19 @@ class ServerSelectionDialog:
         """Build the server selection UI."""
         tk.Label(
             self.dialog,
-            text="VANES-AI V2",
-            font=("Segoe UI", 24, "bold"),
+            text="⚡ VANES-AI V2",
+            font=theme.TITLE_FONT,
+            bg=theme.BG, fg=theme.CYAN,
         ).pack(pady=(20, 5))
 
         tk.Label(
             self.dialog,
-            text="Select Your Server Tier",
-            font=("Segoe UI", 12),
+            text="SELECT YOUR SERVER TIER",
+            font=(theme.MONO, 11),
+            bg=theme.BG, fg=theme.MAGENTA,
         ).pack(pady=(0, 15))
 
-        button_frame = tk.Frame(self.dialog)
+        button_frame = tk.Frame(self.dialog, bg=theme.BG)
         button_frame.pack(pady=10)
 
         for tier_id, info in TIERS.items():
@@ -50,25 +53,31 @@ class ServerSelectionDialog:
             paid = self.tracker.has_paid(tier_id)
             status = "PAID" if paid else f"{remaining} trials left"
 
-            frame = tk.Frame(button_frame, relief="raised", bd=2)
+            frame = tk.Frame(
+                button_frame, bg=theme.PANEL,
+                highlightbackground=theme.LINE, highlightthickness=1, bd=0,
+            )
             frame.pack(side="left", padx=10, pady=10)
 
             tk.Label(
                 frame,
                 text=info.name,
-                font=("Segoe UI", 16, "bold"),
-            ).pack(pady=(10, 5))
+                font=(theme.MONO, 15, "bold"),
+                bg=theme.PANEL, fg=theme.CYAN,
+            ).pack(pady=(12, 5))
 
             tk.Label(
                 frame,
                 text=f"${info.price:,.0f}",
-                font=("Segoe UI", 14),
+                font=(theme.MONO, 14),
+                bg=theme.PANEL, fg=theme.GOLD,
             ).pack(pady=5)
 
             tk.Label(
                 frame,
                 text=status,
-                font=("Segoe UI", 10),
+                font=(theme.MONO, 9),
+                bg=theme.PANEL, fg=theme.MUTED,
             ).pack(pady=5)
 
             features_text = "\n".join(f"• {f}" for f in info.features)
@@ -76,13 +85,18 @@ class ServerSelectionDialog:
                 frame,
                 text=features_text,
                 justify="center",
-                font=("Segoe UI", 9),
+                font=(theme.MONO, 9),
+                bg=theme.PANEL, fg=theme.TEXT,
             ).pack(pady=10, padx=10)
 
-            select_btn = ttk.Button(
+            select_btn = tk.Button(
                 frame,
                 text="SELECT",
                 command=lambda tier=tier_id: self._select(tier),
+                font=(theme.MONO, 10, "bold"),
+                bg=theme.CYAN, fg="#02121a", activebackground=theme.MAGENTA,
+                activeforeground="#ffffff", bd=0, padx=18, pady=6,
+                cursor="hand2",
             )
             select_btn.pack(pady=(0, 15))
 

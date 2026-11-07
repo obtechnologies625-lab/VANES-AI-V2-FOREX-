@@ -2,6 +2,8 @@
 
 # pylint: disable=line-too-long
 
+from .theme import CSS_BASE, FONT_LINK
+
 
 def portal_page():
     """Return the self-contained VANES strategy marketplace portal."""
@@ -9,29 +11,30 @@ def portal_page():
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>VANES-AI V2 | Strategy Marketplace</title>
+""" + FONT_LINK + """
 <style>
-:root{color-scheme:dark;--bg:#071018;--panel:#0d1b26;--line:#1b3545;--text:#eaf4f7;--muted:#7f9aa8;--accent:#53e0b5;--gold:#ffd84d}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,sans-serif;background:radial-gradient(circle at 20% 0,#102b39 0,#071018 45%);color:var(--text)}
+""" + CSS_BASE + """
 .wrap{max-width:1080px;margin:auto;padding:22px}
 .top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px}
-.brand{font-size:22px;font-weight:900}.brand .bolt{color:var(--gold)}
-.tag{color:var(--muted);font-size:12px;letter-spacing:.12em}
+.brand{font-size:24px;font-weight:900;letter-spacing:.08em;color:#fff;text-shadow:0 0 12px var(--cyan),0 0 30px #00fff055}.brand .bolt{color:var(--gold);text-shadow:0 0 14px var(--gold)}
+.tag{color:var(--muted);font-size:11px;letter-spacing:.2em}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.panel{background:#0d1b26dd;border:1px solid var(--line);border-radius:18px;padding:20px}
-h2{font-size:15px;margin:0 0 12px;letter-spacing:.06em;color:var(--accent);text-transform:uppercase}
-label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
-input,textarea,select{width:100%;background:#07131b;border:1px solid #284352;color:var(--text);padding:11px;border-radius:10px;outline:none;font:inherit}
+.panel{background:var(--panelsoft);border:1px solid var(--line);border-radius:14px;padding:20px;box-shadow:0 0 0 1px #ffffff08,0 18px 50px #0009,inset 0 0 40px #9d00ff0a;backdrop-filter:blur(4px)}
+h2{font-size:14px;margin:0 0 12px;letter-spacing:.14em;color:var(--magenta);text-transform:uppercase;text-shadow:0 0 12px #ff2bd655}
+label{display:block;font-size:11px;color:var(--muted);margin:11px 0 4px;letter-spacing:.12em}
+input,textarea,select{width:100%;background:#060b16;border:1px solid #23405f;color:var(--text);padding:11px;border-radius:8px;outline:none;font-family:var(--mono)}
+input:focus,textarea:focus,select:focus{border-color:var(--cyan);box-shadow:0 0 16px #00fff044}
 textarea{min-height:84px;resize:vertical}
-button{background:var(--accent);border:0;border-radius:10px;padding:11px 16px;font-weight:800;cursor:pointer;margin-top:12px}
-button.ghost{background:#122631;color:#cde0e6;border:1px solid #254655}
-.msg{margin-top:10px;font-size:13px;min-height:18px}
-.ok{color:var(--accent)}.err{color:#ffb3b8}
+button{background:linear-gradient(135deg,var(--cyan),#00b3ff);border:0;border-radius:8px;padding:11px 18px;font-weight:800;cursor:pointer;margin-top:12px;color:#02121a;font-family:var(--mono);letter-spacing:.1em;box-shadow:0 0 18px #00fff055}button:hover{filter:brightness(1.15)}
+button.ghost{background:#0d1830;color:var(--cyan);border:1px solid #22456b;box-shadow:none}
+.msg{margin-top:10px;font-size:13px;min-height:18px;letter-spacing:.04em}
+.ok{color:var(--ok);text-shadow:0 0 10px #00ffa344}.err{color:var(--err);text-shadow:0 0 10px #ff3b6b44}
 .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:8px}
-.card{background:#0d1b26;border:1px solid var(--line);border-radius:14px;padding:14px}
-.card b{display:block;font-size:15px}.card .meta{color:var(--muted);font-size:12px;margin-top:6px}
-.price{color:var(--gold);font-weight:800}
-.note{background:#2b2412;border:1px solid #5c4a2a;color:#ffd84d;padding:10px 12px;border-radius:10px;font-size:12px;margin-bottom:14px}
-.empty{color:var(--muted);font-size:13px}
+.card{background:var(--panelsoft);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:inset 0 0 30px #00fff00a;transition:.18s}.card:hover{border-color:var(--cyan);box-shadow:0 0 22px #00fff033,inset 0 0 30px #00fff00d;transform:translateY(-2px)}
+.card b{display:block;font-size:15px;color:#fff;text-shadow:0 0 10px #00fff033}.card .meta{color:var(--muted);font-size:12px;margin-top:6px}
+.price{color:var(--gold);font-weight:800;text-shadow:0 0 12px #f7ff5e44}
+.note{background:#1a1206;border:1px solid #5c4a1a;color:var(--gold);padding:11px 13px;border-radius:10px;font-size:12px;margin-bottom:14px;box-shadow:inset 0 0 24px #f7ff5e0d;letter-spacing:.04em}
+.empty{color:var(--muted);font-size:13px;letter-spacing:.08em}
 @media(max-width:800px){.grid{grid-template-columns:1fr}}
 </style></head>
 <body><main class="wrap">

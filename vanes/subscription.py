@@ -30,7 +30,7 @@ TIERS = {
     "BEGINNER": TierInfo(
         id="BEGINNER",
         name="BEGINNER",
-        price=49.0,
+        price=2.0,
         trial_limit=5,
         features=[
             "Basic text analysis",
@@ -41,7 +41,7 @@ TIERS = {
     "INTERMEDIATE": TierInfo(
         id="INTERMEDIATE",
         name="INTERMEDIATE",
-        price=149.0,
+        price=4.0,
         trial_limit=5,
         features=[
             "Gemini 2.5 multimodal AI",
@@ -54,7 +54,7 @@ TIERS = {
     "PRO": TierInfo(
         id="PRO",
         name="PRO",
-        price=499.0,
+        price=6.0,
         trial_limit=5,
         features=[
             "Live MT5 order dispatch",

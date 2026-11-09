@@ -13,7 +13,7 @@ VANES_PAYWALL = "0"
 #   npx wrangler secret put VANES_GEMINI_API_KEY
 [[kv_namespaces]]
 binding = "VANES_STATE"
-id = "00000000000000000000000000000000"
+id = "6f56689581924255afada4aea20d0c2e"
 
 [observability]
 enabled = false

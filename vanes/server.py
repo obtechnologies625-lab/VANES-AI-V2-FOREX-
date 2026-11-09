@@ -210,6 +210,14 @@ class LocalBridge:
             "screen_context": "",
             "mt5_screen_active": False,
             "suggested_next_step": "Open MetaTrader 5 to enable visual guidance.",
+            "ml_regime": "",
+            "ml_prob": 0.0,
+            "sentiment": {"score": 0.0, "label": "NEUTRAL", "samples": 0},
+            "tilt": 0,
+            "journal_prompt": "",
+            "execution_slices": [],
+            "est_slippage": 0.0,
+            "incubation": {},
         }
         self._state = initial
         self._health = {

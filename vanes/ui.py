@@ -10,14 +10,17 @@ from PIL import ImageTk
 from . import theme
 from .alerts import AlertEngine
 from .audit import AuditLogger
+from .behavior import BehaviorMonitor
 from .branding import asset_path, render_icon
 from .cloud import CloudStatePublisher, CloudPublishResult
 from .config import AppConfig
+from .execution import plan_order
 from .market import atr
 from .paper import PaperTrader
 from .platform import PlatformAdapter
 from .risk import build_risk_plan, position_size_from_tick, validate_trade_risk
 from .screen import ScreenObserver, next_step
+from .sentiment import SentimentFeed
 from .server_selector import ServerSelectionDialog
 from .strategy import RuleBasedStrategy
 from .subscription import SubscriptionManager, tier_allows_live
@@ -41,6 +44,7 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         aggregator=None,
         trader=None,
         subscription: SubscriptionManager | None = None,
+        incubation=None,
     ):
         """Create the always-on-top observer window."""
         self.config = config
@@ -56,6 +60,11 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
         self.aggregator = aggregator
         self.trader = trader
         self.subscription = subscription
+        self.incubation = incubation
+        self.sentiment = SentimentFeed()
+        self.behavior = BehaviorMonitor()
+        self._last_open_trades = 0
+        self._last_gate = ""
         self.last_signal = None
         self.alerts = AlertEngine()
         self.screen_observer = ScreenObserver()
@@ -136,6 +145,31 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             font=theme.SMALL_FONT, bg=theme.BG, fg=theme.MUTED,
         )
         self.trader_status.pack(pady=2)
+        self.ml_status = tk.Label(
+            self.root,
+            text="ML regime: —",
+            font=theme.SMALL_FONT, bg=theme.BG, fg=theme.CYAN,
+        )
+        self.ml_status.pack(pady=2)
+        self.sentiment_status = tk.Label(
+            self.root,
+            text="Sentiment: NEUTRAL (0 samples)",
+            font=theme.SMALL_FONT, bg=theme.BG, fg=theme.MUTED,
+        )
+        self.sentiment_status.pack(pady=2)
+        self.behavior_status = tk.Label(
+            self.root,
+            text="Behavior: calm (tilt 0)",
+            font=theme.SMALL_FONT, bg=theme.BG, fg=theme.MUTED,
+            wraplength=390, justify="center",
+        )
+        self.behavior_status.pack(pady=2)
+        self.incubation_status = tk.Label(
+            self.root,
+            text="Incubation: —",
+            font=theme.SMALL_FONT, bg=theme.BG, fg=theme.GOLD,
+        )
+        self.incubation_status.pack(pady=2)
         tk.Label(
             self.root,
             text="OBSERVING • PAPER ONLY • NO BROKER ORDERS",
@@ -363,6 +397,77 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 )
             )
 
+        open_trades = (
+            sum(1 for t in self.paper.trades if t.closed_at is None)
+            if self.paper else 0
+        )
+        if open_trades > self._last_open_trades:
+            self.behavior.record_open()
+        elif open_trades < self._last_open_trades and self.paper:
+            closed = [t for t in self.paper.trades if t.closed_at is not None]
+            last_pnl = 0.0
+            if closed:
+                last = closed[-1]
+                multiplier = 1.0 if last.direction == "BUY" else -1.0
+                last_pnl = (
+                    (last.exit_price or last.entry) - last.entry
+                ) * last.size * multiplier
+            self.behavior.record_close(last_pnl)
+        self._last_open_trades = open_trades
+
+        gate_key = f"{guidance.direction.value}:{risk_gate}"
+        if (
+            guidance.direction.value in ("BUY", "SELL")
+            and risk_gate == "BLOCK"
+            and self._last_gate != gate_key
+        ):
+            self.behavior.record_rule_break("risk gate blocked setup")
+        self._last_gate = gate_key
+
+        regime = self.strategy.regime(candles)
+        behavior_report = self.behavior.report()
+        plan = None
+        if spec and size > 0:
+            plan = plan_order(
+                size,
+                spec.volume_min,
+                spec.volume_max,
+                spec.volume_step,
+                spread_points or 0.0,
+                self.config.max_spread_points,
+            )
+        if regime:
+            self.ml_status.config(
+                text=f"ML regime: {regime[0]} ({regime[1]:.0%})"
+            )
+        else:
+            self.ml_status.config(text="ML regime: collecting data")
+        self.sentiment_status.config(
+            text=(
+                f"Sentiment: {self.sentiment.label} "
+                f"({self.sentiment.samples} samples)"
+            )
+        )
+        self.behavior_status.config(
+            text=(
+                f"Behavior: {', '.join(behavior_report.flags) or 'calm'} "
+                f"(tilt {behavior_report.tilt_score})"
+                + (
+                    f" — {behavior_report.journal_prompt}"
+                    if behavior_report.journal_prompt else ""
+                )
+            )
+        )
+        if self.incubation:
+            incubation_state = self.incubation.status()
+            self.incubation_status.config(
+                text=(
+                    f"Incubation: {incubation_state.days_elapsed}/"
+                    f"{incubation_state.required_days} days"
+                    f"{' • live unlocked' if incubation_state.complete else ' • live locked'}"
+                )
+            )
+
         self.signal.config(text=guidance.direction.value)
         self.confidence.config(text=f"Confidence: {guidance.confidence:.0%}")
         self.reason.config(text=guidance.reason)
@@ -436,6 +541,16 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
                 screen_context=screen.summary,
                 mt5_screen_active=screen.mt5_active,
                 suggested_next_step=next_step(screen, guidance.direction.value),
+                ml_regime=regime[0] if regime else "",
+                ml_prob=regime[1] if regime else 0.0,
+                sentiment=self.sentiment.snapshot(),
+                tilt=behavior_report.tilt_score,
+                journal_prompt=behavior_report.journal_prompt,
+                execution_slices=list(plan.slices) if plan else [],
+                est_slippage=plan.estimated_slippage_points if plan else 0.0,
+                incubation=(
+                    self.incubation.status().__dict__ if self.incubation else {}
+                ),
             )
         if self.cloud_publisher:
             state_payload = {

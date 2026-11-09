@@ -122,6 +122,39 @@ The desktop overlay shows the VANES lightning-bolt-in-wheel icon in its title ba
 - Chat commands are informational only.
 - Risk calculations are references, not an authorization to trade.
 
+## Model integrity & behavioral guardrails
+
+VANES ships the anti-overfitting and behavioral-safety layers a real trading
+assistant needs, all dependency-free and covered by `tests/test_ml_integrity.py`:
+
+- **Hard risk guardrails** — `vanes/risk.py` defines non-negotiable ceilings
+  (`MAX_RISK_PERCENT = 2.0`, `MAX_DAILY_LOSS_PERCENT = 5.0`). `AppConfig`
+  clamps into this envelope in `__post_init__`, so environment variables can
+  never raise per-trade risk above 1-2% or remove the daily drawdown cap.
+- **True ML regime classification** — `vanes/ml.py` trains a multinomial
+  logistic-regression classifier (gradient descent, L2) on scale-free candle
+  features to label the regime UP / DOWN / FLAT. The strategy uses it as a
+  veto/modulator: a rule-based BUY or SELL is blocked when the trained model
+  disagrees, so guidance is ML-checked rather than repackaged indicators.
+- **Walk-forward validation** — `vanes/walkforward.py` rolls a training window
+  across history and scores the model only on unseen forward windows,
+  reporting out-of-sample accuracy versus a majority-class baseline and an
+  `edge_survives` verdict. In-sample-only edges collapse here.
+- **Incubation gate** — `vanes/incubation.py` persists first-observation time
+  and session count; live MT5 dispatch stays locked until the configured
+  `VANES_INCUBATION_DAYS` (default 30) of live, un-traded observation elapses.
+- **NLP sentiment layer** — `vanes/sentiment.py` scores news / transcript text
+  into a [-1, 1] bullish-bearish signal with negation handling and aggregates a
+  rolling feed, exposed on the overlay, `/state`, and chat (`sentiment`).
+- **Behavioral tilt & drift detection** — `vanes/behavior.py` watches opens,
+  closes, and guardrail overrides to flag overtrading and revenge trading,
+  computes a 0-100 tilt score, and emits an emotional journaling prompt when
+  tilt crosses the alert threshold.
+- **Slippage-aware execution** — `vanes/execution.py` splits a target size into
+  broker-valid child slices and estimates slippage (half-spread + impact),
+  deferring execution when the live spread exceeds the budget. PRO live
+  dispatch routes through `MT5Trader.place_sliced_order`.
+
 ## Testing
 
 Run:

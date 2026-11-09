@@ -49,6 +49,10 @@ button{background:linear-gradient(135deg,var(--cyan),#00b3ff);border:0;border-ra
 <div class="card"><span class="label">BROKER DATA</span><b id="broker">NOT READY</b></div>
 <div class="card"><span class="label">PAPER BALANCE</span><b id="balance">—</b></div>
 <div class="card"><span class="label">PAPER DAILY P/L</span><b id="pnl">—</b></div>
+<div class="card"><span class="label">ML REGIME</span><b id="regime">—</b></div>
+<div class="card"><span class="label">SENTIMENT</span><b id="sentiment">NEUTRAL</b></div>
+<div class="card"><span class="label">TILT</span><b id="tilt">0</b></div>
+<div class="card"><span class="label">EXEC SLIPPAGE</span><b id="slippage">—</b></div>
 </section>
 <div class="footer">VANES is an analytical observer. Chat cannot place broker orders.</div>
 </main>
@@ -56,7 +60,12 @@ button{background:linear-gradient(135deg,var(--cyan),#00b3ff);border:0;border-ra
 const $=id=>document.getElementById(id),chat=$('chat');
 function add(text,who='bot'){const d=document.createElement('div');d.className='msg '+who;d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight}
 function ask(v){$('input').value=v;$('form').requestSubmit()}
-async function refresh(){try{const r=await fetch('/state',{cache:'no-store'});const s=await r.json();$('live').textContent='● LIVE';$('symbol').textContent=s.symbol||'MARKET';$('direction').textContent=s.direction||'WAIT';$('confidence').textContent=(Number(s.confidence||0)*100).toFixed(0)+'% confidence';$('reason').textContent=s.reason||'No explanation';$('bid').textContent=Number(s.bid||0).toFixed(5);$('ask').textContent=Number(s.ask||0).toFixed(5);$('spread').textContent=Number(s.spread||0).toFixed(5);$('risk').textContent=s.risk_gate||'WAITING';$('broker').textContent=s.broker_ready?'READY':'NOT READY';$('broker').className=s.broker_ready?'ok':'';$('balance').textContent=Number(s.paper_balance||0).toFixed(2);$('pnl').textContent=Number(s.paper_daily_pnl||0).toFixed(2)}catch(e){$('live').textContent='● OFFLINE'}} 
+async function refresh(){try{const r=await fetch('/state',{cache:'no-store'});const s=await r.json();$('live').textContent='● LIVE';$('symbol').textContent=s.symbol||'MARKET';$('direction').textContent=s.direction||'WAIT';$('confidence').textContent=(Number(s.confidence||0)*100).toFixed(0)+'% confidence';$('reason').textContent=s.reason||'No explanation';$('bid').textContent=Number(s.bid||0).toFixed(5);$('ask').textContent=Number(s.ask||0).toFixed(5);$('spread').textContent=Number(s.spread||0).toFixed(5);$('risk').textContent=s.risk_gate||'WAITING';$('broker').textContent=s.broker_ready?'READY':'NOT READY';$('broker').className=s.broker_ready?'ok':'';$('balance').textContent=Number(s.paper_balance||0).toFixed(2);$('pnl').textContent=Number(s.paper_daily_pnl||0).toFixed(2);
+const sent=s.sentiment||{};
+$('regime').textContent=(s.ml_regime||'—')+(s.ml_prob?' '+((Number(s.ml_prob)||0)*100).toFixed(0)+'%':'');
+$('sentiment').textContent=sent.label||'NEUTRAL';
+$('tilt').textContent=String(s.tilt||0);
+$('slippage').textContent=((s.execution_slices||[]).length? (s.execution_slices.length+' slices · '):'— ')+Number(s.est_slippage||0).toFixed(1)+' pts'}catch(e){$('live').textContent='● OFFLINE'}} 
 $('form').addEventListener('submit',async e=>{e.preventDefault();const i=$('input'),v=i.value.trim();if(!v)return;i.value='';add(v,'user');try{const r=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:v})});const d=await r.json();add(d.text||d.error||'No response')}catch(e){add('VANES bridge is offline. Start the application and try again.')}})
 add('VANES online. I can explain the live quote, signal, indicators, risk gate, paper account, and why the strategy is waiting.','bot');refresh();setInterval(refresh,1000)
 </script></body></html>"""

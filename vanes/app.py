@@ -5,6 +5,7 @@ from .audit import AuditLogger
 from .capture import AudioCapture, ScreenCapture
 from .cloud import CloudStatePublisher
 from .config import AppConfig
+from .incubation import IncubationTracker
 from .jwt_client import SecureCloudClient
 from .paper import PaperTrader
 from .platform import MT5Adapter
@@ -14,6 +15,26 @@ from .strategy import RuleBasedStrategy, StrategyConfig
 from .subscription import SubscriptionManager, tier_allows_live
 from .trader import MT5Trader
 from .ui import Overlay
+
+
+def _build_trader(adapter, subscription, incubation):
+    """Create the live trader only when tier and incubation both allow it."""
+    if not tier_allows_live(subscription.selected_tier):
+        return None
+    if not incubation.live_allowed():
+        status = incubation.status()
+        print(
+            "VANES live trader: incubation locked ("
+            f"{status.days_elapsed}/{status.required_days} days "
+            "of live observation)"
+        )
+        return None
+    trader = MT5Trader(adapter)
+    if trader.connect():
+        print("VANES live trader: enabled (PRO)")
+        return trader
+    print(f"VANES live trader: disabled ({trader.last_error})")
+    return None
 
 
 def main():  # pylint: disable=too-many-locals
@@ -32,6 +53,10 @@ def main():  # pylint: disable=too-many-locals
         StrategyConfig(max_spread_points=config.max_spread_points)
     )
     audit = AuditLogger(config.audit_path)
+    incubation = IncubationTracker(
+        config.incubation_path, config.incubation_days
+    )
+    incubation.touch()
 
     aggregator = PacketAggregator(
         subscription_tier=subscription.selected_tier,
@@ -83,14 +108,7 @@ def main():  # pylint: disable=too-many-locals
         message=status.message,
     )
 
-    trader = None
-    if tier_allows_live(subscription.selected_tier):
-        trader = MT5Trader(adapter)
-        if trader.connect():
-            print("VANES live trader: enabled (PRO)")
-        else:
-            print(f"VANES live trader: disabled ({trader.last_error})")
-            trader = None
+    trader = _build_trader(adapter, subscription, incubation)
 
     bridge.start()
     print(f"VANES bridge: http://{config.chat_host}:{config.chat_port}/state")
@@ -112,6 +130,7 @@ def main():  # pylint: disable=too-many-locals
             aggregator=aggregator,
             trader=trader,
             subscription=subscription,
+            incubation=incubation,
         ).run()
     finally:
         bridge.stop()

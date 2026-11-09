@@ -3,6 +3,8 @@
 from dataclasses import dataclass
 import os
 
+from .risk import clamp_guardrails
+
 
 @dataclass
 class AppConfig:  # pylint: disable=too-many-instance-attributes
@@ -10,7 +12,7 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
 
     refresh_ms: int = 1500
     overlay_width: int = 430
-    overlay_height: int = 430
+    overlay_height: int = 540
     always_on_top: bool = True
     dry_run: bool = True
     platform: str = "MetaTrader 5"
@@ -28,6 +30,8 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
     paper_max_open_trades: int = 1
     paper_start_balance: float = 10000.0
     audit_path: str = "data/vanes_audit.jsonl"
+    incubation_path: str = "data/vanes_incubation.json"
+    incubation_days: int = 30
 
     cloud_url: str = ""
     cloud_token: str = ""
@@ -44,6 +48,12 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
     capture_audio_chunk_seconds: float = 2.0
     capture_screen_fps: int = 1
     capture_max_packet_bytes: int = 524288
+
+    def __post_init__(self) -> None:
+        """Enforce the non-negotiable risk guardrail envelope."""
+        self.risk_percent, self.max_daily_loss_percent = clamp_guardrails(
+            self.risk_percent, self.max_daily_loss_percent
+        )
 
     @classmethod
     def from_environment(cls) -> "AppConfig":
@@ -78,6 +88,10 @@ class AppConfig:  # pylint: disable=too-many-instance-attributes
             audit_path=os.getenv(
                 "VANES_AUDIT_PATH", "data/vanes_audit.jsonl"
             ),
+            incubation_path=os.getenv(
+                "VANES_INCUBATION_PATH", "data/vanes_incubation.json"
+            ),
+            incubation_days=number("VANES_INCUBATION_DAYS", 30, int),
             cloud_url=os.getenv("VANES_CLOUD_URL", ""),
             cloud_token=os.getenv("VANES_CLOUD_TOKEN", ""),
             cloud_publish_interval=number(

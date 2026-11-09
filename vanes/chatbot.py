@@ -1,6 +1,6 @@
 """Realtime, local market chatbot for VANES-AI V2."""
 
-# pylint: disable=line-too-long,too-many-return-statements
+# pylint: disable=line-too-long,too-many-return-statements,too-many-branches
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import re
@@ -45,6 +45,14 @@ class MarketChatbot:
             return ChatReply(f"Current guidance is {state.get('direction', 'WAIT')}: {state.get('reason', 'No explanation available')}.", "explain")
         if any(word in lowered for word in ("paper", "balance", "pnl")):
             return ChatReply(self._paper(state), "paper")
+        if any(word in lowered for word in ("sentiment", "news", "headline")):
+            return ChatReply(self._sentiment(state), "sentiment")
+        if any(word in lowered for word in ("tilt", "behavior", "journal", "discipline")):
+            return ChatReply(self._behavior(state), "behavior")
+        if any(word in lowered for word in ("regime", "ml", "model", "classifier")):
+            return ChatReply(self._regime(state), "regime")
+        if "incubation" in lowered:
+            return ChatReply(self._incubation(state), "incubation")
         return ChatReply("I can answer live quote, signal, risk, status, paper-trading, and reason questions. Try: 'What is EURUSD doing?' or 'Why wait?'", "unknown")
 
     @staticmethod
@@ -83,6 +91,39 @@ class MarketChatbot:
     def _paper(state):
         """Format paper account status."""
         return f"Paper balance: {float(state.get('paper_balance', 0.0)):.2f}; daily P/L: {float(state.get('paper_daily_pnl', 0.0)):.2f}; open trades: {int(state.get('paper_open_trades', 0))}."
+
+    @staticmethod
+    def _sentiment(state):
+        """Format the NLP sentiment aggregate."""
+        sentiment = state.get("sentiment") or {}
+        return (f"News/social sentiment: {sentiment.get('label', 'NEUTRAL')} "
+                f"(score {float(sentiment.get('score', 0.0)):+.2f} over "
+                f"{int(sentiment.get('samples', 0))} snippets).")
+
+    @staticmethod
+    def _behavior(state):
+        """Format behavioral tilt / drift status."""
+        tilt = int(state.get("tilt", 0))
+        prompt = state.get("journal_prompt") or ""
+        base = f"Behavioral monitor: tilt {tilt}/100."
+        return f"{base} {prompt}" if prompt else f"{base} No drift flags right now."
+
+    @staticmethod
+    def _regime(state):
+        """Format the ML regime classification."""
+        regime = state.get("ml_regime") or "unknown"
+        prob = float(state.get("ml_prob", 0.0))
+        return f"ML regime classifier: {regime} at {prob:.0%} probability (trained walk-forward, out-of-sample validated)."
+
+    @staticmethod
+    def _incubation(state):
+        """Format incubation progress gating live capital."""
+        incubation = state.get("incubation") or {}
+        if not incubation:
+            return "Incubation tracking is not active in this session."
+        return (f"Incubation: {incubation.get('days_elapsed', 0)}/"
+                f"{incubation.get('required_days', 0)} days of live observation; "
+                f"live capital {'unlocked' if incubation.get('complete') else 'still locked'}.")
 
     def _status(self, state):
         """Format a compact live dashboard summary."""

@@ -3,6 +3,21 @@
 from dataclasses import dataclass
 from math import floor
 
+# Non-negotiable account guardrails. These are hard ceilings that configuration
+# and environment variables can never exceed, per the product safety policy of
+# risking at most 1-2% per trade with a bounded daily drawdown.
+MAX_RISK_PERCENT = 2.0
+MAX_DAILY_LOSS_PERCENT = 5.0
+
+
+def clamp_guardrails(
+    risk_percent: float, max_daily_loss_percent: float
+) -> tuple[float, float]:
+    """Clamp risk settings into the non-negotiable guardrail envelope."""
+    safe_risk = min(max(risk_percent, 0.0), MAX_RISK_PERCENT)
+    safe_daily = min(max(max_daily_loss_percent, 0.0), MAX_DAILY_LOSS_PERCENT)
+    return safe_risk, safe_daily
+
 
 @dataclass(frozen=True)
 class RiskPlan:

@@ -3,12 +3,13 @@
 from dataclasses import dataclass
 
 from .market import Candle, atr, ema, rsi
+from .ml import RegimeClassifier, build_dataset, extract_features
 from .signals import Direction, Guidance
 from .structure import analyze_structure
 
 
 @dataclass(frozen=True)
-class StrategyConfig:  # pylint: disable=too-few-public-methods
+class StrategyConfig:  # pylint: disable=too-few-public-methods,too-many-instance-attributes
     """Configure indicator, spread, and structure filters."""
 
     fast_ema: int = 9
@@ -17,6 +18,9 @@ class StrategyConfig:  # pylint: disable=too-few-public-methods
     atr_period: int = 14
     min_confidence: float = 0.60
     max_spread_points: float = 25.0
+    ml_enabled: bool = True
+    ml_retrain_candles: int = 50
+    ml_min_prob: float = 0.40
 
 
 class RuleBasedStrategy:  # pylint: disable=too-few-public-methods,too-many-return-statements
@@ -25,6 +29,34 @@ class RuleBasedStrategy:  # pylint: disable=too-few-public-methods,too-many-retu
     def __init__(self, config: StrategyConfig | None = None):
         """Create a strategy with optional configuration."""
         self.config = config or StrategyConfig()
+        self._classifier = RegimeClassifier()
+        self._trained_size = 0
+
+    def _regime(self, candles: list[Candle]) -> tuple[str, float] | None:
+        """Return (regime, probability) from the trained ML model, retraining
+        periodically so the model adapts to new market data."""
+        if not self.config.ml_enabled or len(candles) < 40:
+            return None
+        if (
+            self._trained_size == 0
+            or abs(len(candles) - self._trained_size)
+            >= self.config.ml_retrain_candles
+        ):
+            features, labels = build_dataset(candles)
+            if features:
+                self._classifier = RegimeClassifier()
+                self._classifier.fit(features, labels)
+                self._trained_size = len(candles)
+        vector = extract_features(candles, len(candles) - 1)
+        if vector is None:
+            return None
+        probs = self._classifier.predict_proba(vector)
+        index = max(range(len(probs)), key=lambda i: probs[i])
+        return ("UP", "DOWN", "FLAT")[index], probs[index]
+
+    def regime(self, candles: list[Candle]) -> tuple[str, float] | None:
+        """Return the current (regime, probability) from the ML model."""
+        return self._regime(candles)
 
     def diagnostics(self, candles: list[Candle]) -> dict:
         """Return indicator and structure diagnostics for UI/chat."""
@@ -46,6 +78,8 @@ class RuleBasedStrategy:  # pylint: disable=too-few-public-methods,too-many-retu
             "trend": structure.trend if structure else "UNKNOWN",
             "support": structure.support if structure else None,
             "resistance": structure.resistance if structure else None,
+            "ml_regime": (self._regime(candles) or (None, 0.0))[0],
+            "ml_prob": (self._regime(candles) or (None, 0.0))[1],
         }
 
     def evaluate(
@@ -94,6 +128,15 @@ class RuleBasedStrategy:  # pylint: disable=too-few-public-methods,too-many-retu
             confidence = min(0.95, 0.60 + min(strength, 0.25))
             if confidence < self.config.min_confidence:
                 return Guidance(Direction.WAIT, confidence, "Low confidence")
+            regime = self._regime(candles)
+            if regime and (
+                regime[0] != "UP" or regime[1] < self.config.ml_min_prob
+            ):
+                return Guidance(
+                    Direction.WAIT,
+                    confidence,
+                    f"ML regime {regime[0]} vetoed BUY",
+                )
             return Guidance(
                 Direction.BUY,
                 confidence,
@@ -111,6 +154,15 @@ class RuleBasedStrategy:  # pylint: disable=too-few-public-methods,too-many-retu
             confidence = min(0.95, 0.60 + min(strength, 0.25))
             if confidence < self.config.min_confidence:
                 return Guidance(Direction.WAIT, confidence, "Low confidence")
+            regime = self._regime(candles)
+            if regime and (
+                regime[0] != "DOWN" or regime[1] < self.config.ml_min_prob
+            ):
+                return Guidance(
+                    Direction.WAIT,
+                    confidence,
+                    f"ML regime {regime[0]} vetoed SELL",
+                )
             return Guidance(
                 Direction.SELL,
                 confidence,

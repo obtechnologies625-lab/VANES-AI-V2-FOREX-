@@ -6,6 +6,8 @@ import time
 from dataclasses import dataclass
 from typing import Any
 
+from .execution import plan_order
+
 
 @dataclass(frozen=True)
 class OrderResult:  # pylint: disable=too-many-instance-attributes  # pylint: disable=too-many-instance-attributes
@@ -139,6 +141,61 @@ class MT5Trader:
             sl=float(sl),
             tp=float(tp),
             message="Order placed",
+        )
+
+    def place_sliced_order(  # pylint: disable=too-many-arguments,too-many-positional-arguments
+        self,
+        symbol: str,
+        direction: str,
+        volume: float,
+        sl: float,
+        tp: float,
+        spec,
+        spread_points: float,
+        slippage_budget_points: float = 25.0,
+        comment: str = "VANES-AI PRO",
+    ) -> OrderResult:
+        """Route a target size as slippage-budgeted child slices."""
+        plan = plan_order(
+            volume,
+            spec.volume_min,
+            spec.volume_max,
+            spec.volume_step,
+            spread_points,
+            slippage_budget_points,
+        )
+        if plan.deferred:
+            self._last_error = plan.reason
+            return OrderResult(
+                False, 0, symbol, direction, 0.0, 0.0, sl, tp, plan.reason
+            )
+        results = [
+            self.place_order(symbol, direction, slice_, sl, tp, comment)
+            for slice_ in plan.slices
+        ]
+        placed = [r for r in results if r.success]
+        if not placed:
+            return results[0]
+        total = sum(r.volume for r in placed)
+        message = (
+            f"Routed {len(placed)}/{len(plan.slices)} slices "
+            f"(est slippage {plan.estimated_slippage_points} pts)"
+        )
+        if len(placed) < len(plan.slices):
+            self._last_error = "Partial fill: some slices rejected"
+            message = f"{message}; partial fill"
+        else:
+            self._last_error = ""
+        return OrderResult(
+            success=len(placed) == len(plan.slices),
+            ticket=placed[0].ticket,
+            symbol=symbol,
+            direction=direction,
+            volume=total,
+            price=placed[0].price,
+            sl=sl,
+            tp=tp,
+            message=message,
         )
 
     def close_position(self, ticket: int) -> OrderResult:

@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# VANES per-machine runtime state (recreated at startup)
+data/*.json
+data/*.jsonl

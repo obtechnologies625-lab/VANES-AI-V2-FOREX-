@@ -2,7 +2,7 @@
 
 # pylint: disable=line-too-long
 
-from .theme import CSS_BASE, FONT_LINK
+from .theme import CSS_BASE, FONT_LINK, TRADEMARK_LINE
 
 
 def html_page():
@@ -54,7 +54,7 @@ button{background:linear-gradient(135deg,var(--cyan),#00b3ff);border:0;border-ra
 <div class="card"><span class="label">TILT</span><b id="tilt">0</b></div>
 <div class="card"><span class="label">EXEC SLIPPAGE</span><b id="slippage">—</b></div>
 </section>
-<div class="footer">VANES is an analytical observer. Chat cannot place broker orders.</div>
+<div class="footer">VANES is an analytical observer. Chat cannot place broker orders.<br>""" + TRADEMARK_LINE + """</div>
 </main>
 <script>
 const $=id=>document.getElementById(id),chat=$('chat');

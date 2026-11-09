@@ -110,7 +110,8 @@ The desktop observer does not automatically enter paper positions. This is inten
 4. Start: `python -m vanes.app`.
 5. Open `http://127.0.0.1:8765/chat` for the realtime command center.
 6. Open `http://127.0.0.1:8765/portal` for the strategy marketplace.
-7. For the MT5 chart panel, allow `http://127.0.0.1:8765` under WebRequest settings.
+7. Open `http://127.0.0.1:8765/dev` for the developer portal (self-tests, key/API status, live endpoint tester).
+8. For the MT5 chart panel, allow `http://127.0.0.1:8765` under WebRequest settings.
 
 The desktop overlay shows the VANES lightning-bolt-in-wheel icon in its title bar and taskbar. The icon is drawn procedurally at startup (`vanes/branding.py`) so it displays on every platform; `icon.svg` is the same mark used for the README and the Worker favicon.
 
@@ -387,9 +388,42 @@ VANES now includes a Cloudflare Worker command center under `cloudflare/`. This 
 1. Install Node.js 18+.
 2. `cd cloudflare`
 3. `npm install`
-4. `npx wrangler login`
-5. `npx wrangler deploy`
-6. Open the Worker URL printed by Wrangler.
+4. Authenticate: `npx wrangler login`, **or** set a long-lived token `export CLOUDFLARE_API_TOKEN=...` (CI / non-interactive). A deploy fails with *"Not logged in. Your auth token has expired…"* if neither is present.
+5. Create the KV namespace once: `npx wrangler kv namespace create VANES_STATE`. Copy the real `id` it prints into `cloudflare/wrangler.toml`, replacing the all-zeros placeholder `id = "00000000000000000000000000000000"`. Deploying with the placeholder is rejected server-side (this is why the automated deploys for commits `67dfada`…`ccd3e93` failed even though `wrangler deploy --dry-run` and CI stayed green — dry-run does not validate the KV id against your account).
+6. Set the Worker secrets (never committed):
+   - `npx wrangler secret put VANES_JWT_SECRET` — signing key for the JWT-gated tier router.
+   - `npx wrangler secret put VANES_GEMINI_API_KEY` — enables cloud multimodal analysis.
+   - `npx wrangler secret put VANES_PUBLISH_TOKEN` — bearer token the desktop app uses to publish state to KV.
+7. `npx wrangler deploy`
+8. Open the Worker URL printed by Wrangler.
+
+### Required APIs & keys
+
+| Purpose | Requirement | Needed for |
+| --- | --- | --- |
+| Market data + PRO live orders | MetaTrader 5 terminal and `pip install -r requirements-mt5.txt` (Windows only) | Live quotes, PRO order dispatch |
+| Cloud multimodal analysis | `VANES_GEMINI_API_KEY` | Cloud chat / screen analysis |
+| Cloudflare deploy | `wrangler login` or `CLOUDFLARE_API_TOKEN` | Deploying the Worker |
+| Cloudflare state store | A real `VANES_STATE` KV namespace id in `wrangler.toml` | Persisting/publishing state |
+| Worker auth | `VANES_JWT_SECRET` | JWT-gated tier router |
+| State publishing | `VANES_PUBLISH_TOKEN` | Desktop → KV publish |
+| Local testing | Nothing beyond Python 3.10+ | Bridge, overlay, self-tests |
+
+The developer portal at `http://127.0.0.1:8765/dev` shows the live READY/MISSING status of every item above and runs all offline self-tests without any of them.
+
+## Developer portal
+
+`GET /dev` serves a cyberpunk testing console (registered to `obtechnologies625@gmail.com`) that:
+
+- Lists each required API/key and whether it is detected — booleans only, secret values are never exposed.
+- Runs ten offline self-tests covering guardrails, the ML regime classifier, walk-forward validation, sentiment, behavioral tilt, slippage-aware execution, risk planning, paper trading, backtesting, and the incubation gate.
+- Fires live requests at `/state`, `/health`, `/api/strategies`, `/api/sellers`, `/chat`, and `/api/dev/env` and pretty-prints the responses.
+
+Backing JSON: `GET /api/dev/selftest` (self-test results) and `GET /api/dev/env` (key/API status). Both are served by the localhost bridge only.
+
+## Trademark
+
+VANES-AI V2 is a trademark of OB Technologies. The mark is rendered on every product surface — the desktop overlay, the server-tier selector, the realtime command center, the strategy marketplace portal, and the developer portal. Developer/support contact: `obtechnologies625@gmail.com`.
 
 ### Live MT5 data
 

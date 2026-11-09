@@ -74,3 +74,7 @@ FONT_LINK = (
     '<link rel="preconnect" href="https://fonts.googleapis.com">'
     '<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">'
 )
+
+# Company trademark shown on every product surface.
+TRADEMARK_LINE = "VANES-AI V2 is a trademark of OB Technologies."
+DEVELOPER_EMAIL = "obtechnologies625@gmail.com"

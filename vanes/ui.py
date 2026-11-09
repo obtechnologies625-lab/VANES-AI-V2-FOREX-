@@ -174,7 +174,13 @@ class Overlay:  # pylint: disable=too-many-instance-attributes,too-many-argument
             self.root,
             text="OBSERVING • PAPER ONLY • NO BROKER ORDERS",
             font=theme.SMALL_FONT, bg=theme.BG, fg=theme.MAGENTA,
-        ).pack(side="bottom", pady=8)
+        ).pack(side="bottom", pady=(0, 8))
+        tk.Label(
+            self.root,
+            text=f"{theme.TRADEMARK_LINE}  •  {theme.DEVELOPER_EMAIL}",
+            font=theme.SMALL_FONT, bg=theme.BG, fg=theme.MUTED,
+            wraplength=390, justify="center",
+        ).pack(side="bottom", pady=(2, 0))
         self.root.after(100, self.refresh)
 
     def _label(self, text: str, fg: str, wrap: bool = False) -> tk.Label:

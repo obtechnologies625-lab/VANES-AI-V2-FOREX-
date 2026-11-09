@@ -100,6 +100,14 @@ class ServerSelectionDialog:
             )
             select_btn.pack(pady=(0, 15))
 
+        tk.Label(
+            self.dialog,
+            text=f"{theme.TRADEMARK_LINE}  •  {theme.DEVELOPER_EMAIL}",
+            font=(theme.MONO, 8),
+            bg=theme.BG, fg=theme.MUTED,
+            wraplength=560, justify="center",
+        ).pack(side="bottom", pady=(0, 12))
+
     def _select(self, tier: str) -> None:
         """Handle tier selection."""
         self.selected_tier = tier

@@ -1,12 +1,15 @@
 """Localhost HTTP bridge used by the MT5 chart panel."""
 
 from datetime import datetime, timezone
+from dataclasses import asdict
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
+from . import selftest
 from .chat_ui import html_page
 from .chatbot import MarketChatbot
+from .devportal_ui import devportal_page
 from .marketplace import MarketplaceStore
 from .portal_ui import portal_page
 
@@ -34,7 +37,20 @@ class _Handler(BaseHTTPRequestHandler):
         if self.path == "/portal":
             self._send_html(portal_page())
             return
-        if self.path == "/api/strategies":
+        if self.path == "/dev":
+            self._send_html(devportal_page())
+            return
+        if self.path == "/api/dev/selftest":
+            payload = json.dumps(
+                [asdict(r) for r in selftest.run_selftest()],
+                separators=(",", ":"),
+            ).encode()
+        elif self.path == "/api/dev/env":
+            payload = json.dumps(
+                selftest.environment_status(),
+                separators=(",", ":"),
+            ).encode()
+        elif self.path == "/api/strategies":
             payload = json.dumps(
                 self.server.marketplace.list_strategies(),
                 separators=(",", ":"),

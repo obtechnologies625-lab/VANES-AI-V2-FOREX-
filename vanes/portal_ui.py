@@ -2,7 +2,7 @@
 
 # pylint: disable=line-too-long
 
-from .theme import CSS_BASE, FONT_LINK
+from .theme import CSS_BASE, DEVELOPER_EMAIL, FONT_LINK, TRADEMARK_LINE
 
 
 def portal_page():
@@ -35,6 +35,7 @@ button.ghost{background:#0d1830;color:var(--cyan);border:1px solid #22456b;box-s
 .price{color:var(--gold);font-weight:800;text-shadow:0 0 12px #f7ff5e44}
 .note{background:#1a1206;border:1px solid #5c4a1a;color:var(--gold);padding:11px 13px;border-radius:10px;font-size:12px;margin-bottom:14px;box-shadow:inset 0 0 24px #f7ff5e0d;letter-spacing:.04em}
 .empty{color:var(--muted);font-size:13px;letter-spacing:.08em}
+.tm{margin-top:18px;text-align:center;color:var(--muted);font-size:11px;letter-spacing:.16em}.tm b{color:var(--cyan)}
 @media(max-width:800px){.grid{grid-template-columns:1fr}}
 </style></head>
 <body><main class="wrap">
@@ -57,6 +58,7 @@ button.ghost{background:#0d1830;color:var(--cyan);border:1px solid #22456b;box-s
 <button onclick="submitStrategy()">List strategy</button><div class="msg" id="strMsg"></div></div>
 </section>
 <section class="panel" style="margin-top:16px"><h2>Live listings</h2><div class="cards" id="listings"></div><div class="empty" id="empty">No strategies listed yet. Be the first pro to publish.</div></section>
+<div class="tm"><b>""" + TRADEMARK_LINE + """</b> &nbsp;•&nbsp; Developer access: """ + DEVELOPER_EMAIL + """</div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
